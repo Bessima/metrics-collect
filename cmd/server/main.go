@@ -40,13 +40,17 @@ func set(w http.ResponseWriter, request *http.Request) {
 		value, err := strconv.ParseInt(request.PathValue("value"), 10, 64)
 		if err != nil {
 			fmt.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 		STORAGE.Counter(metric, value)
 		log.Println("Successful counter: ", metric, STORAGE.View(models.Counter, metric))
 	case repository.TypeGauge:
 		value, err := strconv.ParseFloat(request.PathValue("value"), 10)
 		if err != nil {
-			log.Fatalf("Failed to parse metric value, error: ", err)
+			log.Println("Failed to parse metric value, error: ", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
 		STORAGE.Replace(metric, value)
