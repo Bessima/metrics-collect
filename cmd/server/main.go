@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"log"
 	"net/http"
@@ -39,14 +38,14 @@ func set(w http.ResponseWriter, request *http.Request) {
 	case repository.TypeCounter:
 		value, err := strconv.ParseInt(request.PathValue("value"), 10, 64)
 		if err != nil {
-			fmt.Println(err)
+			log.Println("Failed to parse metric value, error: ", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		STORAGE.Counter(metric, value)
 		log.Println("Successful counter: ", metric, STORAGE.View(models.Counter, metric))
 	case repository.TypeGauge:
-		value, err := strconv.ParseFloat(request.PathValue("value"), 10)
+		value, err := strconv.ParseFloat(request.PathValue("value"), 64)
 		if err != nil {
 			log.Println("Failed to parse metric value, error: ", err)
 			w.WriteHeader(http.StatusBadRequest)
