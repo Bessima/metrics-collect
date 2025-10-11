@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"log"
 	"math/rand"
 	"net/http"
@@ -48,8 +47,7 @@ func main() {
 		name := replaceSignsInName(sample.Name)
 		postURL := "http://localhost:8080/update/" + typeMetric + "/" + name + "/" + value
 
-		body := bytes.NewBuffer([]byte(``))
-		resp, err := http.Post(postURL, "application/json; charset=utf-8", body)
+		resp, err := http.Post(postURL, "text/plain; charset=utf-8", nil)
 		if err != nil {
 			log.Fatalf("Failed to create resource at: %s and the error is: %v\n", postURL, err)
 		}

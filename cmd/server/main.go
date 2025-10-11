@@ -18,6 +18,6 @@ func run() error {
 	STORAGE = repository.NewMemStorage()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/update/{typeMetric}/{metric}/{value}", handler.SetMetricHandler(&STORAGE))
+	mux.HandleFunc("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(&STORAGE))
 	return http.ListenAndServe(`:8080`, mux)
 }

@@ -17,7 +17,7 @@ func SetMetricHandler(storage *repository.MemStorage) http.HandlerFunc {
 		}
 
 		typeMetric := request.PathValue("typeMetric")
-		metric := request.PathValue("metric")
+		metric := request.PathValue("name")
 
 		switch repository.TypeMetric(typeMetric) {
 		case repository.TypeCounter:
@@ -43,7 +43,7 @@ func SetMetricHandler(storage *repository.MemStorage) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 	}
 }
