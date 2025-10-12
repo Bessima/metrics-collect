@@ -42,7 +42,7 @@ func (ms *MemStorage) Counter(name string, value int64) {
 	}
 }
 
-func (ms *MemStorage) Replace(name string, value float64) {
+func (ms *MemStorage) ReplaceGaugeMetric(name string, value float64) {
 	if elem, exists := ms.gauge[name]; exists {
 		*elem.Value = value
 		return

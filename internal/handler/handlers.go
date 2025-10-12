@@ -37,7 +37,7 @@ func SetMetricHandler(storage *repository.MemStorage) http.HandlerFunc {
 				return
 			}
 
-			storage.Replace(metric, value)
+			storage.ReplaceGaugeMetric(metric, value)
 			log.Println("Successful replacing gauge: ", metric, storage.View(models.Gauge, metric))
 		default:
 			w.WriteHeader(http.StatusBadRequest)
