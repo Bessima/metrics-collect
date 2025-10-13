@@ -1,44 +1,81 @@
 package agent
 
 import (
+	"errors"
+	"github.com/Bessima/metrics-collect/internal/repository"
+	"math/rand"
 	"runtime"
 	"strconv"
 )
 
-const COUNTER_CUSTOM_METRIC = "PollCount"
-const GAUGE_CUSTOM_METRIC = "RandomValue"
+const CounterPollCountMetric = "PollCount"
+const GaugeRandomMetric = "RandomValue"
 
-func GetAllMemStats() map[string]string {
+func GetAllMemStats() map[string]any {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 
-	return map[string]string{
-		"Alloc":         strconv.FormatUint(m.Alloc, 10),
-		"BuckHashSys":   strconv.FormatUint(m.BuckHashSys, 10),
-		"Frees":         strconv.FormatUint(m.Frees, 10),
-		"GCCPUFraction": strconv.FormatFloat(m.GCCPUFraction, 'f', -1, 64),
-		"GCSys":         strconv.FormatUint(m.GCSys, 10),
-		"HeapAlloc":     strconv.FormatUint(m.HeapAlloc, 10),
-		"HeapIdle":      strconv.FormatUint(m.HeapIdle, 10),
-		"HeapInuse":     strconv.FormatUint(m.HeapInuse, 10),
-		"HeapObjects":   strconv.FormatUint(m.HeapObjects, 10),
-		"HeapReleased":  strconv.FormatUint(m.HeapReleased, 10),
-		"HeapSys":       strconv.FormatUint(m.HeapSys, 10),
-		"LastGC":        strconv.FormatUint(m.LastGC, 10),
-		"Lookups":       strconv.FormatUint(m.Lookups, 10),
-		"MCacheInuse":   strconv.FormatUint(m.MCacheInuse, 10),
-		"MCacheSys":     strconv.FormatUint(m.MCacheSys, 10),
-		"MSpanInuse":    strconv.FormatUint(m.MSpanInuse, 10),
-		"MSpanSys":      strconv.FormatUint(m.MSpanSys, 10),
-		"Mallocs":       strconv.FormatUint(m.Mallocs, 10),
-		"NextGC":        strconv.FormatUint(m.NextGC, 10),
-		"NumForcedGC":   strconv.FormatUint(uint64(m.NumForcedGC), 10),
-		"NumGC":         strconv.FormatUint(uint64(m.NumGC), 10),
-		"OtherSys":      strconv.FormatUint(m.OtherSys, 10),
-		"PauseTotalNs":  strconv.FormatUint(m.PauseTotalNs, 10),
-		"StackInuse":    strconv.FormatUint(m.StackInuse, 10),
-		"StackSys":      strconv.FormatUint(m.StackSys, 10),
-		"Sys":           strconv.FormatUint(m.Sys, 10),
-		"TotalAlloc":    strconv.FormatUint(m.TotalAlloc, 10),
+	return map[string]any{
+		"Alloc":         m.Alloc,
+		"BuckHashSys":   m.BuckHashSys,
+		"Frees":         m.Frees,
+		"GCCPUFraction": m.GCCPUFraction,
+		"GCSys":         m.GCSys,
+		"HeapAlloc":     m.HeapAlloc,
+		"HeapIdle":      m.HeapIdle,
+		"HeapInuse":     m.HeapInuse,
+		"HeapObjects":   m.HeapObjects,
+		"HeapReleased":  m.HeapReleased,
+		"HeapSys":       m.HeapSys,
+		"LastGC":        m.LastGC,
+		"Lookups":       m.Lookups,
+		"MCacheInuse":   m.MCacheInuse,
+		"MCacheSys":     m.MCacheSys,
+		"MSpanInuse":    m.MSpanInuse,
+		"MSpanSys":      m.MSpanSys,
+		"Mallocs":       m.Mallocs,
+		"NextGC":        m.NextGC,
+		"NumForcedGC":   m.NumForcedGC,
+		"NumGC":         m.NumGC,
+		"OtherSys":      m.OtherSys,
+		"PauseTotalNs":  m.PauseTotalNs,
+		"StackInuse":    m.StackInuse,
+		"StackSys":      m.StackSys,
+		"Sys":           m.Sys,
+		"TotalAlloc":    m.TotalAlloc,
 	}
+}
+
+func InitialBaseMetrics() map[repository.TypeMetric]map[string]any {
+	metrics := map[repository.TypeMetric]map[string]any{}
+	metrics[repository.TypeCounter] = map[string]any{CounterPollCountMetric: int64(1)}
+	metrics[repository.TypeGauge] = GetAllMemStats()
+	metrics[repository.TypeGauge][GaugeRandomMetric] = rand.Int63()
+	return metrics
+}
+
+func UpdateMetrics(metrics map[repository.TypeMetric]map[string]any) map[repository.TypeMetric]map[string]any {
+	metrics[repository.TypeGauge] = GetAllMemStats()
+	metrics[repository.TypeCounter][CounterPollCountMetric] = metrics[repository.TypeCounter][CounterPollCountMetric].(int64) + 1
+	metrics[repository.TypeGauge][GaugeRandomMetric] = rand.Int63()
+	return metrics
+}
+
+func ConvertInterfaceToStr(anyValue any) (value string, err error) {
+
+	switch anyValue.(type) {
+	case float64:
+		value = strconv.FormatFloat(anyValue.(float64), 'f', -1, 64)
+	case int64:
+		value = strconv.FormatInt(anyValue.(int64), 10)
+	case uint32:
+		value = strconv.FormatUint(uint64(anyValue.(uint32)), 10)
+	case uint64:
+		value = strconv.FormatUint(anyValue.(uint64), 10)
+	case string:
+		value = anyValue.(string)
+	default:
+		err = errors.New("unsupported type")
+	}
+	return
 }
