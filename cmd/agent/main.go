@@ -1,58 +1,46 @@
 package main
 
 import (
-	"log"
-	"math/rand"
-	"net/http"
-	"runtime/metrics"
-	"strconv"
-	"strings"
-
+	"fmt"
 	"github.com/Bessima/metrics-collect/internal/repository"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/Bessima/metrics-collect/internal/agent"
 )
 
-func replaceSignsInName(name string) string {
-	strWithoutSlash := strings.Replace(name[1:], "/", "-", -1)
-	indexForEnd := strings.Index(strWithoutSlash, ":")
-	return strWithoutSlash[:indexForEnd]
-}
-
-func getMetrics() []metrics.Sample {
-
-	samples := make([]metrics.Sample, len(metrics.All()))
-	for i, m := range metrics.All() {
-		samples[i].Name = m.Name
-	}
-	// Считываем текущее значение всех метрик
-	metrics.Read(samples)
-
-	return samples
-}
+const pollInterval = 2
+const reportInterval = 10
 
 func main() {
-	samples := getMetrics()
-	typeMetrics := [2]repository.TypeMetric{repository.TypeCounter, repository.TypeGauge}
-	defer func() {
-		if err := recover(); err != nil {
-			log.Println("panic occurred: ", err)
-		}
-	}()
+	metrics := agent.GetAllMemStats()
 
-	for _, sample := range samples {
-		typeMetric := string(typeMetrics[rand.Intn(len(typeMetrics))])
-		if sample.Value.Kind() != metrics.KindUint64 {
-			continue
-		}
-		value := strconv.FormatUint(sample.Value.Uint64(), 10)
-		name := replaceSignsInName(sample.Name)
-		postURL := "http://localhost:8080/update/" + typeMetric + "/" + name + "/" + value
+	for {
+		start := time.Now()
 
-		resp, err := http.Post(postURL, "text/plain; charset=utf-8", nil)
-		if err != nil {
-			log.Fatalf("Failed to create resource at: %s and the error is: %v\n", postURL, err)
-		}
-		defer resp.Body.Close()
+		for name, value := range metrics {
+			typeMetric := string(repository.TypeGauge)
 
-		log.Println("Successful sending: ", postURL)
+			postURL := fmt.Sprintf("http://localhost:8080/update/%s/%s/%s", typeMetric, name, value)
+			resp, err := http.Post(postURL, "text/plain; charset=utf-8", nil)
+			if err != nil {
+				log.Fatalf("Failed to create resource at: %s and the error is: %v\n", postURL, err)
+			}
+			defer resp.Body.Close()
+
+			log.Println("Successful sending: ", postURL)
+		}
+
+		for {
+			metrics = agent.GetAllMemStats()
+
+			if time.Now().Sub(start).Seconds() >= reportInterval {
+				break
+			}
+
+			time.Sleep(pollInterval * time.Second)
+		}
 	}
+
 }
