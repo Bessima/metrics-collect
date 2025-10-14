@@ -63,17 +63,17 @@ func UpdateMetrics(metrics map[repository.TypeMetric]map[string]any) map[reposit
 
 func ConvertInterfaceToStr(anyValue any) (value string, err error) {
 
-	switch anyValue.(type) {
+	switch anyValue := anyValue.(type) {
 	case float64:
-		value = strconv.FormatFloat(anyValue.(float64), 'f', -1, 64)
+		value = strconv.FormatFloat(anyValue, 'f', -1, 64)
 	case int64:
-		value = strconv.FormatInt(anyValue.(int64), 10)
+		value = strconv.FormatInt(anyValue, 10)
 	case uint32:
-		value = strconv.FormatUint(uint64(anyValue.(uint32)), 10)
+		value = strconv.FormatUint(uint64(anyValue), 10)
 	case uint64:
-		value = strconv.FormatUint(anyValue.(uint64), 10)
+		value = strconv.FormatUint(anyValue, 10)
 	case string:
-		value = anyValue.(string)
+		value = anyValue
 	default:
 		err = errors.New("unsupported type")
 	}
