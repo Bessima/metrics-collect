@@ -7,13 +7,15 @@ import (
 	"net/http"
 )
 
-const Domain = "http://localhost:8080"
+type Client struct {
+	Domain     string
+	HttpClient *http.Client
+}
 
-func SendMetric(typeMetric string, name string, value string) error {
-	client := &http.Client{}
+func (client *Client) SendMetric(typeMetric string, name string, value string) error {
 
-	postURL := fmt.Sprintf("%s/update/%s/%s/%s", Domain, typeMetric, name, value)
-	response, err := client.Post(postURL, "text/plain; charset=utf-8", nil)
+	postURL := fmt.Sprintf("%s/update/%s/%s/%s", client.Domain, typeMetric, name, value)
+	response, err := client.HttpClient.Post(postURL, "text/plain; charset=utf-8", nil)
 	if err != nil {
 		log.Printf("Failed to create resource at: %s and the error is: %v\n", postURL, err)
 		return err

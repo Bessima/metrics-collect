@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/Bessima/metrics-collect/internal/agent"
@@ -9,6 +10,8 @@ import (
 
 const pollInterval = 2
 const reportInterval = 10
+
+const Domain = "http://localhost:8080"
 
 func main() {
 	metrics := agent.InitialBaseMetrics()
@@ -23,7 +26,15 @@ func main() {
 					log.Printf("Error converting interface to metric %s: %v", name, err)
 					continue
 				}
-				agent.SendMetric(string(typeMetric), name, value)
+				client := agent.Client{
+					Domain:     Domain,
+					HttpClient: &http.Client{},
+				}
+				err = client.SendMetric(string(typeMetric), name, value)
+				if err != nil {
+					log.Printf("Error sending metrics: %s", err)
+					continue
+				}
 			}
 		}
 
