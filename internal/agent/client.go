@@ -9,13 +9,13 @@ import (
 
 type Client struct {
 	Domain     string
-	HttpClient *http.Client
+	HTTPClient *http.Client
 }
 
 func (client *Client) SendMetric(typeMetric string, name string, value string) error {
 
 	postURL := fmt.Sprintf("%s/update/%s/%s/%s", client.Domain, typeMetric, name, value)
-	response, err := client.HttpClient.Post(postURL, "text/plain; charset=utf-8", nil)
+	response, err := client.HTTPClient.Post(postURL, "text/plain; charset=utf-8", nil)
 	if err != nil {
 		log.Printf("Failed to create resource at: %s and the error is: %v\n", postURL, err)
 		return err

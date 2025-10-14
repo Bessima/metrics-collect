@@ -28,7 +28,7 @@ func main() {
 				}
 				client := agent.Client{
 					Domain:     Domain,
-					HttpClient: &http.Client{},
+					HTTPClient: &http.Client{},
 				}
 				err = client.SendMetric(string(typeMetric), name, value)
 				if err != nil {

@@ -50,7 +50,7 @@ func TestSendMetric(t *testing.T) {
 			defer server.Close()
 
 			client := Client{
-				HttpClient: server.Client(),
+				HTTPClient: server.Client(),
 				Domain:     server.URL,
 			}
 			if err := client.SendMetric(tt.args.typeMetric, tt.args.name, tt.args.value); (err != nil) != tt.expectedError {
