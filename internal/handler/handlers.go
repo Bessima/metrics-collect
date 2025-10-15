@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/Bessima/metrics-collect/internal/model"
 	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 	"strconv"
@@ -10,18 +11,12 @@ import (
 
 func SetMetricHandler(storage *repository.MemStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
-
-		if request.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-
-		typeMetric := request.PathValue("typeMetric")
-		metric := request.PathValue("name")
+		typeMetric := chi.URLParam(request, "typeMetric")
+		metric := chi.URLParam(request, "name")
 
 		switch repository.TypeMetric(typeMetric) {
 		case repository.TypeCounter:
-			value, err := strconv.ParseInt(request.PathValue("value"), 10, 64)
+			value, err := strconv.ParseInt(chi.URLParam(request, "value"), 10, 64)
 			if err != nil {
 				log.Println("Failed to parse metric value, error: ", err)
 				w.WriteHeader(http.StatusBadRequest)
@@ -30,7 +25,7 @@ func SetMetricHandler(storage *repository.MemStorage) http.HandlerFunc {
 			storage.Counter(metric, value)
 			log.Println("Successful counter: ", metric, storage.View(models.Counter, metric))
 		case repository.TypeGauge:
-			value, err := strconv.ParseFloat(request.PathValue("value"), 64)
+			value, err := strconv.ParseFloat(chi.URLParam(request, "value"), 64)
 			if err != nil {
 				log.Println("Failed to parse metric value, error: ", err)
 				w.WriteHeader(http.StatusBadRequest)

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Bessima/metrics-collect/internal/handler"
 	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 )
 
@@ -14,10 +15,15 @@ func main() {
 	}
 }
 
+func GetMetricRouter(storage repository.MemStorage) chi.Router {
+	router := chi.NewRouter()
+	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(&storage))
+
+	return router
+}
+
 func run() error {
 	STORAGE = repository.NewMemStorage()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(&STORAGE))
-	return http.ListenAndServe(`:8080`, mux)
+	return http.ListenAndServe(`:8080`, GetMetricRouter(STORAGE))
 }

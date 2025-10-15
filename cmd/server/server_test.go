@@ -1,4 +1,4 @@
-package handler
+package main
 
 import (
 	"fmt"
@@ -28,8 +28,8 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 		contentType string
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/update/{typeMetric}/{name}/{value}", SetMetricHandler(&storage))
+	testServer := httptest.NewServer(GetMetricRouter(storage))
+	defer testServer.Close()
 
 	newCounterMetric := int64(3)
 	newGaugeMetric := float64(3.14)
@@ -126,19 +126,21 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			url := fmt.Sprintf("/update/%s/%s/%s", tt.metric.typeMetric, tt.metric.name, tt.metric.value)
-			req := httptest.NewRequest(tt.method, url, nil)
-			response := httptest.NewRecorder()
+			path := fmt.Sprintf("/update/%s/%s/%s", tt.metric.typeMetric, tt.metric.name, tt.metric.value)
+			req, err := http.NewRequest(tt.method, testServer.URL+path, nil)
+			require.NoError(t, err)
 
-			mux.ServeHTTP(response, req)
+			response, err := testServer.Client().Do(req)
+			require.NoError(t, err)
+			defer response.Body.Close()
 
-			assert.Equal(t, tt.want.code, response.Code)
+			assert.Equal(t, tt.want.code, response.StatusCode)
 
 			resBody, err := io.ReadAll(response.Body)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.response, string(resBody))
 
-			assert.Equal(t, tt.want.contentType, response.Header().Get("Content-Type"))
+			assert.Equal(t, tt.want.contentType, response.Header.Get("Content-Type"))
 
 			if tt.metric.expectedValue != nil {
 				typeMetric := repository.TypeMetric(tt.metric.typeMetric)
