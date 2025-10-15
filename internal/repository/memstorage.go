@@ -1,6 +1,10 @@
 package repository
 
-import models "github.com/Bessima/metrics-collect/internal/model"
+import (
+	"errors"
+	"fmt"
+	models "github.com/Bessima/metrics-collect/internal/model"
+)
 
 type TypeMetric string
 
@@ -56,13 +60,23 @@ func (ms *MemStorage) ReplaceGaugeMetric(name string, value float64) {
 	}
 }
 
-func (ms *MemStorage) View(typeMetric TypeMetric, name string) interface{} {
+func (ms *MemStorage) View(typeMetric TypeMetric, name string) (value interface{}, err error) {
 	switch {
 	case typeMetric == TypeCounter:
-		return *ms.counters[name].Delta
-	case typeMetric == TypeGauge:
+		if elem, exists := ms.counters[name]; exists {
+			value = *elem.Delta
+			return
+		}
+		err = errors.New("metric not found")
 
-		return *ms.gauge[name].Value
+	case typeMetric == TypeGauge:
+		if elem, exists := ms.gauge[name]; exists {
+			value = *elem.Value
+			return
+		}
+		err = errors.New("metric not found")
+	default:
+		err = fmt.Errorf("unknown metric type: %s", typeMetric)
 	}
-	return nil
+	return
 }

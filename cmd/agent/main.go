@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Bessima/metrics-collect/internal/common"
 	"log"
 	"net/http"
 	"time"
@@ -21,7 +22,7 @@ func main() {
 
 		for typeMetric, m := range metrics {
 			for name, anyValue := range m {
-				value, err := agent.ConvertInterfaceToStr(anyValue)
+				value, err := common.ConvertInterfaceToStr(anyValue)
 				if err != nil {
 					log.Printf("Error converting interface to metric %s: %v", name, err)
 					continue
