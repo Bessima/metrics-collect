@@ -17,6 +17,7 @@ func main() {
 
 func GetMetricRouter(storage repository.MemStorage) chi.Router {
 	router := chi.NewRouter()
+	router.Get("/", handler.MainHandler(&storage))
 	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(&storage))
 	router.Get("/value/{typeMetric}/{name}", handler.ViewMetricValue(&storage))
 

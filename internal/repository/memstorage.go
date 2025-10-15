@@ -80,3 +80,15 @@ func (ms *MemStorage) View(typeMetric TypeMetric, name string) (value interface{
 	}
 	return
 }
+
+func (ms *MemStorage) All() []models.Metrics {
+	metrics := make([]models.Metrics, 0, len(ms.counters)+len(ms.gauge))
+
+	for _, item := range ms.counters {
+		metrics = append(metrics, item)
+	}
+	for _, item := range ms.gauge {
+		metrics = append(metrics, item)
+	}
+	return metrics
+}
