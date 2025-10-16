@@ -9,12 +9,10 @@ import (
 	"github.com/Bessima/metrics-collect/internal/agent"
 )
 
-const pollInterval = 2
-const reportInterval = 10
-
-const Domain = "http://localhost:8080"
-
 func main() {
+	flags := Flags{}
+	flags.Init()
+
 	metrics := agent.InitialBaseMetrics()
 
 	for {
@@ -28,7 +26,7 @@ func main() {
 					continue
 				}
 				client := agent.Client{
-					Domain:     Domain,
+					Domain:     flags.getServerAddressWithProtocol(),
 					HTTPClient: &http.Client{},
 				}
 				err = client.SendMetric(string(typeMetric), name, value)
@@ -41,10 +39,10 @@ func main() {
 
 		for {
 			metrics = agent.UpdateMetrics(metrics)
-			if time.Since(start).Seconds() >= reportInterval {
+			if time.Since(start).Seconds() >= flags.getReportInterval() {
 				break
 			}
-			time.Sleep(pollInterval * time.Second)
+			time.Sleep(flags.getPollInterval() * time.Second)
 		}
 	}
 

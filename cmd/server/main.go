@@ -4,12 +4,16 @@ import (
 	"github.com/Bessima/metrics-collect/internal/handler"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 )
 
 var STORAGE repository.MemStorage
 
 func main() {
+	parseFlags()
+	log.Println("Running server on", flagRunAddr)
+
 	if err := run(); err != nil {
 		panic(err)
 	}
@@ -27,5 +31,5 @@ func GetMetricRouter(storage repository.MemStorage) chi.Router {
 func run() error {
 	STORAGE = repository.NewMemStorage()
 
-	return http.ListenAndServe(`:8080`, GetMetricRouter(STORAGE))
+	return http.ListenAndServe(flagRunAddr, GetMetricRouter(STORAGE))
 }
