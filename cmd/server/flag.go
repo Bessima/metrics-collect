@@ -4,10 +4,12 @@ import (
 	"flag"
 )
 
-var flagRunAddr string
+type ServerFlags struct {
+	address string
+}
 
-func parseFlags() {
-	flag.StringVar(&flagRunAddr, "a", ":8080", "address and port to run server")
+func (flags *ServerFlags) Init() {
+	flag.StringVar(&flags.address, "a", ":8080", "address and port to run server")
 
 	flag.Parse()
 }

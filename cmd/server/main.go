@@ -4,32 +4,37 @@ import (
 	"github.com/Bessima/metrics-collect/internal/handler"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/go-chi/chi/v5"
+	"html/template"
 	"log"
 	"net/http"
 )
 
-var STORAGE repository.MemStorage
-
 func main() {
-	parseFlags()
-	log.Println("Running server on", flagRunAddr)
+	flags := ServerFlags{}
+	flags.Init()
 
-	if err := run(); err != nil {
+	log.Println("Running server on", flags.address)
+
+	if err := run(flags.address); err != nil {
 		panic(err)
 	}
 }
 
-func GetMetricRouter(storage repository.MemStorage) chi.Router {
+func getMetricRouter(storage *repository.MemStorage, templates *template.Template) chi.Router {
 	router := chi.NewRouter()
-	router.Get("/", handler.MainHandler(&storage))
-	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(&storage))
-	router.Get("/value/{typeMetric}/{name}", handler.ViewMetricValue(&storage))
+
+	router.Get("/", handler.MainHandler(storage, templates))
+
+	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(storage))
+	router.Get("/value/{typeMetric}/{name}", handler.ViewMetricValue(storage))
 
 	return router
 }
 
-func run() error {
-	STORAGE = repository.NewMemStorage()
+func run(address string) error {
+	templates := handler.ParseAllTemplates()
 
-	return http.ListenAndServe(flagRunAddr, GetMetricRouter(STORAGE))
+	storage := repository.NewMemStorage()
+
+	return http.ListenAndServe(address, getMetricRouter(&storage, templates))
 }

@@ -64,8 +64,9 @@ func ViewMetricValue(storage *repository.MemStorage) http.HandlerFunc {
 			return
 		}
 
-		io.WriteString(w, result)
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
+
+		io.WriteString(w, result)
 	}
 }

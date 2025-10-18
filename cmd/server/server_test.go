@@ -5,6 +5,7 @@ import (
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"html/template"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -28,7 +29,7 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 		contentType string
 	}
 
-	testServer := httptest.NewServer(GetMetricRouter(storage))
+	testServer := httptest.NewServer(getMetricRouter(&storage, &template.Template{}))
 	defer testServer.Close()
 
 	newCounterMetric := int64(3)

@@ -2,18 +2,19 @@ package main
 
 import (
 	"flag"
-	"strconv"
 	"strings"
-	"time"
 )
 
-type Flags struct {
+const defaultPollInterval = 2
+const defaultReportInterval = 10
+
+type AgentFlags struct {
 	serverAddress  string
-	pollInterval   string
-	reportInterval string
+	pollInterval   int64
+	reportInterval int64
 }
 
-func (f *Flags) getServerAddressWithProtocol() string {
+func (f *AgentFlags) getServerAddressWithProtocol() string {
 	http := "http://"
 	https := "https://"
 
@@ -23,26 +24,10 @@ func (f *Flags) getServerAddressWithProtocol() string {
 	return http + f.serverAddress
 }
 
-func (f *Flags) getPollInterval() time.Duration {
-	value, err := strconv.Atoi(f.pollInterval)
-	if err != nil {
-		panic(err)
-	}
-	return time.Duration(value)
-}
-
-func (f *Flags) getReportInterval() float64 {
-	value, err := strconv.Atoi(f.reportInterval)
-	if err != nil {
-		panic(err)
-	}
-	return float64(value)
-}
-
-func (f *Flags) Init() {
+func (f *AgentFlags) Init() {
 	flag.StringVar(&f.serverAddress, "a", "http://localhost:8080", "address and port server")
-	flag.StringVar(&f.pollInterval, "p", "2", "poll interval")
-	flag.StringVar(&f.reportInterval, "r", "10", "report interval")
+	flag.Int64Var(&f.pollInterval, "p", defaultPollInterval, "poll interval")
+	flag.Int64Var(&f.reportInterval, "r", defaultReportInterval, "report interval")
 
 	flag.Parse()
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	models "github.com/Bessima/metrics-collect/internal/model"
+	"sync"
 )
 
 type TypeMetric string
@@ -20,6 +21,7 @@ type MemoryStorage interface {
 }
 
 type MemStorage struct {
+	mutex    sync.RWMutex
 	counters map[string]models.Metrics
 	gauge    map[string]models.Metrics
 }
@@ -34,6 +36,8 @@ func NewMemStorage() MemStorage {
 func (ms *MemStorage) Counter(name string, value int64) {
 
 	if elem, exists := ms.counters[name]; exists {
+		ms.mutex.Lock()
+		defer ms.mutex.Unlock()
 		*elem.Delta = *elem.Delta + value
 		return
 	}
@@ -48,6 +52,8 @@ func (ms *MemStorage) Counter(name string, value int64) {
 
 func (ms *MemStorage) ReplaceGaugeMetric(name string, value float64) {
 	if elem, exists := ms.gauge[name]; exists {
+		ms.mutex.Lock()
+		defer ms.mutex.Unlock()
 		*elem.Value = value
 		return
 	}
