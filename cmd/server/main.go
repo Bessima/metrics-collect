@@ -10,12 +10,11 @@ import (
 )
 
 func main() {
-	flags := ServerFlags{}
-	flags.Init()
+	config := InitConfig()
 
-	log.Println("Running server on", flags.address)
+	log.Println("Running server on", config.address)
 
-	if err := run(flags.address); err != nil {
+	if err := run(config.address); err != nil {
 		panic(err)
 	}
 }

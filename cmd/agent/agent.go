@@ -10,23 +10,22 @@ import (
 )
 
 type Agent struct {
-	flags   AgentFlags
+	config  *Config
 	client  agent.Client
 	metrics map[repository.TypeMetric]map[string]any
 }
 
 func NewAgent() *Agent {
-	flags := AgentFlags{}
-	flags.Init()
+	config := InitConfig()
 
 	metrics := agent.InitialBaseMetrics()
 
 	client := agent.Client{
-		Domain:     flags.getServerAddressWithProtocol(),
+		Domain:     config.getServerAddressWithProtocol(),
 		HTTPClient: &http.Client{},
 	}
 	return &Agent{
-		flags:   flags,
+		config:  config,
 		metrics: metrics,
 		client:  client,
 	}
@@ -57,7 +56,7 @@ func (a *Agent) Run() {
 
 		a.sendMetrics()
 
-		ticker := time.NewTicker(time.Duration(a.flags.pollInterval) * time.Second)
+		ticker := time.NewTicker(time.Duration(a.config.poolInterval) * time.Second)
 		done := make(chan bool)
 
 		go func() {
@@ -71,7 +70,7 @@ func (a *Agent) Run() {
 			}
 		}()
 
-		time.Sleep(time.Duration(a.flags.reportInterval) * time.Second)
+		time.Sleep(time.Duration(a.config.reportInterval) * time.Second)
 		ticker.Stop()
 		done <- true
 	}
