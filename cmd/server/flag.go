@@ -9,7 +9,7 @@ type ServerFlags struct {
 }
 
 func (flags *ServerFlags) Init() {
-	flag.StringVar(&flags.address, "a", ":8080", "address and port to run server")
+	flag.StringVar(&flags.address, "a", ":8080", "Address and port to run server")
 
 	flag.Parse()
 }
