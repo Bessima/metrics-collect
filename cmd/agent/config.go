@@ -7,9 +7,9 @@ import (
 )
 
 type Config struct {
-	serverAddress  string `env:"ADDRESS"`
-	reportInterval int64  `env:"REPORT_INTERVAL"`
-	poolInterval   int64  `env:"POLL_INTERVAL"`
+	ServerAddress  string `env:"ADDRESS"`
+	ReportInterval int64  `env:"REPORT_INTERVAL"`
+	PoolInterval   int64  `env:"POLL_INTERVAL"`
 }
 
 func InitConfig() *Config {
@@ -22,14 +22,14 @@ func InitConfig() *Config {
 	flags := AgentFlags{}
 	flags.Init()
 
-	if cfg.serverAddress == "" {
-		cfg.serverAddress = flags.serverAddress
+	if cfg.ServerAddress == "" {
+		cfg.ServerAddress = flags.serverAddress
 	}
-	if cfg.reportInterval == 0 {
-		cfg.reportInterval = flags.reportInterval
+	if cfg.ReportInterval == 0 {
+		cfg.ReportInterval = flags.reportInterval
 	}
-	if cfg.poolInterval == 0 {
-		cfg.poolInterval = flags.poolInterval
+	if cfg.PoolInterval == 0 {
+		cfg.PoolInterval = flags.poolInterval
 	}
 	return &cfg
 }
@@ -38,8 +38,8 @@ func (cfg *Config) getServerAddressWithProtocol() string {
 	http := "http://"
 	https := "https://"
 
-	if strings.Contains(cfg.serverAddress, https) || strings.Contains(cfg.serverAddress, http) {
-		return cfg.serverAddress
+	if strings.Contains(cfg.ServerAddress, https) || strings.Contains(cfg.ServerAddress, http) {
+		return cfg.ServerAddress
 	}
-	return http + cfg.serverAddress
+	return http + cfg.ServerAddress
 }

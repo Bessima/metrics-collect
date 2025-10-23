@@ -12,9 +12,9 @@ import (
 func main() {
 	config := InitConfig()
 
-	log.Println("Running server on", config.address)
+	log.Println("Running server on", config.Address)
 
-	if err := run(config.address); err != nil {
+	if err := run(config.Address); err != nil {
 		panic(err)
 	}
 }

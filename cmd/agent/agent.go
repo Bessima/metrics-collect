@@ -56,7 +56,7 @@ func (a *Agent) Run() {
 
 		a.sendMetrics()
 
-		ticker := time.NewTicker(time.Duration(a.config.poolInterval) * time.Second)
+		ticker := time.NewTicker(time.Duration(a.config.PoolInterval) * time.Second)
 		done := make(chan bool)
 
 		go func() {
@@ -70,7 +70,7 @@ func (a *Agent) Run() {
 			}
 		}()
 
-		time.Sleep(time.Duration(a.config.reportInterval) * time.Second)
+		time.Sleep(time.Duration(a.config.ReportInterval) * time.Second)
 		ticker.Stop()
 		done <- true
 	}

@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	address string `env:"ADDRESS"`
+	Address string `env:"ADDRESS"`
 }
 
 func InitConfig() *Config {
@@ -16,11 +16,11 @@ func InitConfig() *Config {
 		log.Println(err)
 	}
 
-	if cfg.address == "" {
+	if cfg.Address == "" {
 		flags := ServerFlags{}
 		flags.Init()
 
-		cfg.address = flags.address
+		cfg.Address = flags.address
 	}
 
 	return &cfg
