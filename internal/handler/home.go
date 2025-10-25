@@ -20,6 +20,7 @@ func MainHandler(storage *repository.MemStorage, templates *template.Template) h
 			Title:   "System Metrics",
 			Metrics: metrics,
 		}
+		w.WriteHeader(http.StatusOK)
 		err := templates.ExecuteTemplate(w, "index.html", data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
