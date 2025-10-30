@@ -17,3 +17,14 @@ type Metrics struct {
 	Value *float64 `json:"value,omitempty"`
 	Hash  string   `json:"hash,omitempty"`
 }
+
+type RequestValueMetric struct {
+	ID    string `json:"id"`
+	MType string `json:"type"`
+}
+
+type ResponseValueMetric struct {
+	ID    string `json:"id"`
+	MType string `json:"type"`
+	Value string `json:"value"`
+}

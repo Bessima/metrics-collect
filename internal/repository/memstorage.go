@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"github.com/Bessima/metrics-collect/internal/common"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"sync"
 )
@@ -66,7 +67,7 @@ func (ms *MemStorage) ReplaceGaugeMetric(name string, value float64) {
 	}
 }
 
-func (ms *MemStorage) View(typeMetric TypeMetric, name string) (value interface{}, err error) {
+func (ms *MemStorage) GetValue(typeMetric TypeMetric, name string) (value interface{}, err error) {
 	switch {
 	case typeMetric == TypeCounter:
 		if elem, exists := ms.counters[name]; exists {
@@ -84,6 +85,35 @@ func (ms *MemStorage) View(typeMetric TypeMetric, name string) (value interface{
 	default:
 		err = fmt.Errorf("unknown metric type: %s", typeMetric)
 	}
+	return
+}
+
+func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (model models.ResponseValueMetric, err error) {
+	switch {
+	case typeMetric == TypeCounter:
+		if elem, exists := ms.counters[name]; exists {
+			model = models.ResponseValueMetric{
+				ID:    elem.ID,
+				MType: elem.MType,
+				Value: common.ConvertInt64ToStr(*elem.Delta),
+			}
+			return
+		}
+	case typeMetric == TypeGauge:
+		if elem, exists := ms.gauge[name]; exists {
+			model = models.ResponseValueMetric{
+				ID:    elem.ID,
+				MType: elem.MType,
+				Value: common.ConvertFloat64ToStr(*elem.Value),
+			}
+			return
+		}
+	default:
+		err = fmt.Errorf("unknown metric type: %s", typeMetric)
+		return
+	}
+
+	err = errors.New("metric not found")
 	return
 }
 

@@ -25,7 +25,7 @@ func SetMetricHandler(storage *repository.MemStorage) http.HandlerFunc {
 				return
 			}
 			storage.Counter(metric, value)
-			newValue, _ := storage.View(models.Counter, metric)
+			newValue, _ := storage.GetValue(models.Counter, metric)
 			log.Println("Successful counter: ", metric, newValue)
 		case repository.TypeGauge:
 			value, err := strconv.ParseFloat(chi.URLParam(request, "value"), 64)
@@ -36,7 +36,7 @@ func SetMetricHandler(storage *repository.MemStorage) http.HandlerFunc {
 			}
 
 			storage.ReplaceGaugeMetric(metric, value)
-			newValue, _ := storage.View(models.Gauge, metric)
+			newValue, _ := storage.GetValue(models.Gauge, metric)
 			log.Println("Successful replacing gauge: ", metric, newValue)
 		default:
 			w.WriteHeader(http.StatusBadRequest)
@@ -51,7 +51,7 @@ func ViewMetricValue(storage *repository.MemStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		typeMetric := repository.TypeMetric(chi.URLParam(request, "typeMetric"))
 		metric := chi.URLParam(request, "name")
-		value, err := storage.View(typeMetric, metric)
+		value, err := storage.GetValue(typeMetric, metric)
 		if err != nil {
 			log.Println("Failed to view metric value, error: ", err)
 			w.WriteHeader(http.StatusNotFound)
