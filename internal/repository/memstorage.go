@@ -88,11 +88,11 @@ func (ms *MemStorage) GetValue(typeMetric TypeMetric, name string) (value interf
 	return
 }
 
-func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (model models.ResponseValueMetric, err error) {
+func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (model models.ShortFieldsMetric, err error) {
 	switch {
 	case typeMetric == TypeCounter:
 		if elem, exists := ms.counters[name]; exists {
-			model = models.ResponseValueMetric{
+			model = models.ShortFieldsMetric{
 				ID:    elem.ID,
 				MType: elem.MType,
 				Value: common.ConvertInt64ToStr(*elem.Delta),
@@ -101,7 +101,7 @@ func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (model model
 		}
 	case typeMetric == TypeGauge:
 		if elem, exists := ms.gauge[name]; exists {
-			model = models.ResponseValueMetric{
+			model = models.ShortFieldsMetric{
 				ID:    elem.ID,
 				MType: elem.MType,
 				Value: common.ConvertFloat64ToStr(*elem.Value),

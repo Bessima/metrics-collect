@@ -7,11 +7,12 @@ import (
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 func UpdateHandler(storage *repository.MemStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var metric models.Metrics
+		var metric models.ShortFieldsMetric
 		var buf bytes.Buffer
 
 		_, err := buf.ReadFrom(r.Body)
@@ -27,12 +28,13 @@ func UpdateHandler(storage *repository.MemStorage) http.HandlerFunc {
 
 		switch repository.TypeMetric(metric.MType) {
 		case repository.TypeCounter:
-			storage.Counter(metric.ID, *metric.Delta)
+			value, _ := strconv.ParseInt(metric.Value, 10, 64)
+			storage.Counter(metric.ID, value)
 			newValue, _ := storage.GetValue(models.Counter, metric.ID)
 			log.Println("Successful counter: ", metric.ID, newValue)
 		case repository.TypeGauge:
-
-			storage.ReplaceGaugeMetric(metric.ID, *metric.Value)
+			value, _ := strconv.ParseFloat(metric.Value, 64)
+			storage.ReplaceGaugeMetric(metric.ID, value)
 			newValue, _ := storage.GetValue(models.Gauge, metric.ID)
 			log.Println("Successful replacing gauge: ", metric.ID, newValue)
 		default:

@@ -23,7 +23,7 @@ type RequestValueMetric struct {
 	MType string `json:"type"`
 }
 
-type ResponseValueMetric struct {
+type ShortFieldsMetric struct {
 	ID    string `json:"id"`
 	MType string `json:"type"`
 	Value string `json:"value"`
