@@ -27,27 +27,25 @@ func UpdateHandler(storage *repository.MemStorage) http.HandlerFunc {
 
 		switch repository.TypeMetric(metric.MType) {
 		case repository.TypeCounter:
-			if metric.Delta != nil {
-				delta := *metric.Delta
-				storage.Counter(metric.ID, delta)
-				newValue, _ := storage.GetValue(models.Counter, metric.ID)
-				log.Println("Successful counter: ", metric.ID, newValue)
-				return
-			} else {
+			if metric.Delta == nil {
 				log.Println("Delta value not found for ", metric.ID)
-
+				w.WriteHeader(http.StatusBadRequest)
+				return
 			}
+			delta := *metric.Delta
+			storage.Counter(metric.ID, delta)
+			newValue, _ := storage.GetValue(models.Counter, metric.ID)
+			log.Println("Successful counter: ", metric.ID, newValue)
 		case repository.TypeGauge:
-			if metric.Value != nil {
-				value := *metric.Value
-				storage.ReplaceGaugeMetric(metric.ID, value)
-				newValue, _ := storage.GetValue(models.Gauge, metric.ID)
-				log.Println("Successful replacing gauge: ", metric.ID, newValue)
-			} else {
+			if metric.Value == nil {
 				log.Println("Value not found for ", metric.ID)
+				w.WriteHeader(http.StatusBadRequest)
+				return
 			}
+			value := *metric.Value
+			storage.ReplaceGaugeMetric(metric.ID, value)
+			newValue, _ := storage.GetValue(models.Gauge, metric.ID)
+			log.Println("Successful replacing gauge: ", metric.ID, newValue)
 		}
-		w.WriteHeader(http.StatusBadRequest)
-		return
 	}
 }

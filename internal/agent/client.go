@@ -42,7 +42,7 @@ func (client *Client) SendMetric(typeMetric string, name string, value string) e
 }
 
 func (client *Client) SendJSONMetric(typeMetric repository.TypeMetric, name string, value string) error {
-	postURL := fmt.Sprintf("%s/update", client.Domain)
+	postURL := fmt.Sprintf("%s/update/", client.Domain)
 	var requestValue models.Metrics
 
 	switch typeMetric {
@@ -74,9 +74,9 @@ func (client *Client) SendJSONMetric(typeMetric repository.TypeMetric, name stri
 		return err
 	}
 
-	response, err := client.HTTPClient.Post(postURL, "application/json", bytes.NewBuffer(resp))
+	response, err := client.HTTPClient.Post(postURL, `application/json`, bytes.NewBuffer(resp))
 	if err != nil {
-		log.Printf("Failed to create resource at: %s and the error is: %v\n", postURL, err)
+		log.Printf("Failed to create resource at: %s and the error is: %v\n", resp, err)
 		return err
 	}
 

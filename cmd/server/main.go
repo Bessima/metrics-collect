@@ -26,8 +26,8 @@ func getMetricRouter(storage *repository.MemStorage, templates *template.Templat
 
 	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(storage))
 	router.Get("/value/{typeMetric}/{name}", handler.ViewMetricValue(storage))
-	router.Post("/update", handler.UpdateHandler(storage))
-	router.Post("/value", handler.ValueHandler(storage))
+	router.Post("/update/", handler.UpdateHandler(storage))
+	router.Post("/value/", handler.ValueHandler(storage))
 
 	return router
 }
