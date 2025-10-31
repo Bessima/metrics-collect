@@ -41,7 +41,7 @@ func (a *Agent) sendMetrics() {
 				continue
 			}
 
-			err = a.client.SendJSONMetric(string(typeMetric), name, value)
+			err = a.client.SendJSONMetric(typeMetric, name, value)
 			if err != nil {
 				log.Printf("Error sending metrics: %s", err)
 				continue

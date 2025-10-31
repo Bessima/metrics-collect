@@ -3,7 +3,6 @@ package repository
 import (
 	"errors"
 	"fmt"
-	"github.com/Bessima/metrics-collect/internal/common"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"sync"
 )
@@ -88,33 +87,23 @@ func (ms *MemStorage) GetValue(typeMetric TypeMetric, name string) (value interf
 	return
 }
 
-func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (model models.ShortFieldsMetric, err error) {
+func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (models.Metrics, error) {
 	switch {
 	case typeMetric == TypeCounter:
 		if elem, exists := ms.counters[name]; exists {
-			model = models.ShortFieldsMetric{
-				ID:    elem.ID,
-				MType: elem.MType,
-				Value: common.ConvertInt64ToStr(*elem.Delta),
-			}
-			return
+			return elem, nil
 		}
 	case typeMetric == TypeGauge:
 		if elem, exists := ms.gauge[name]; exists {
-			model = models.ShortFieldsMetric{
-				ID:    elem.ID,
-				MType: elem.MType,
-				Value: common.ConvertFloat64ToStr(*elem.Value),
-			}
-			return
+			return elem, nil
 		}
 	default:
-		err = fmt.Errorf("unknown metric type: %s", typeMetric)
-		return
+		err := fmt.Errorf("unknown metric type: %s", typeMetric)
+		return models.Metrics{}, err
 	}
 
-	err = errors.New("metric not found")
-	return
+	err := errors.New("metric not found")
+	return models.Metrics{}, err
 }
 
 func (ms *MemStorage) All() []models.Metrics {
