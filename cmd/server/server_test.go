@@ -145,7 +145,7 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 
 			if tt.metric.expectedValue != nil {
 				typeMetric := repository.TypeMetric(tt.metric.typeMetric)
-				newValue, _ := storage.View(typeMetric, tt.metric.name)
+				newValue, _ := storage.GetValue(typeMetric, tt.metric.name)
 				assert.Equal(t, tt.metric.expectedValue, newValue)
 			}
 		})

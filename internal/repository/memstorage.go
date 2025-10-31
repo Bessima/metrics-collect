@@ -66,7 +66,7 @@ func (ms *MemStorage) ReplaceGaugeMetric(name string, value float64) {
 	}
 }
 
-func (ms *MemStorage) View(typeMetric TypeMetric, name string) (value interface{}, err error) {
+func (ms *MemStorage) GetValue(typeMetric TypeMetric, name string) (value interface{}, err error) {
 	switch {
 	case typeMetric == TypeCounter:
 		if elem, exists := ms.counters[name]; exists {
@@ -85,6 +85,25 @@ func (ms *MemStorage) View(typeMetric TypeMetric, name string) (value interface{
 		err = fmt.Errorf("unknown metric type: %s", typeMetric)
 	}
 	return
+}
+
+func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (models.Metrics, error) {
+	switch {
+	case typeMetric == TypeCounter:
+		if elem, exists := ms.counters[name]; exists {
+			return elem, nil
+		}
+	case typeMetric == TypeGauge:
+		if elem, exists := ms.gauge[name]; exists {
+			return elem, nil
+		}
+	default:
+		err := fmt.Errorf("unknown metric type: %s", typeMetric)
+		return models.Metrics{}, err
+	}
+
+	err := errors.New("metric not found")
+	return models.Metrics{}, err
 }
 
 func (ms *MemStorage) All() []models.Metrics {
