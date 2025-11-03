@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	models "github.com/Bessima/metrics-collect/internal/model"
@@ -74,7 +73,20 @@ func (client *Client) SendJSONMetric(typeMetric repository.TypeMetric, name stri
 		return err
 	}
 
-	response, err := client.HTTPClient.Post(postURL, `application/json`, bytes.NewBuffer(resp))
+	compressData, err := Compress(resp)
+	if err != nil {
+		log.Printf("Failed to compress data: %v\n", err)
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, postURL, &compressData)
+	if err != nil {
+		log.Fatalf("Error creating request: %v", err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Encoding", "gzip")
+
+	response, err := client.HTTPClient.Do(req)
 	if err != nil {
 		log.Printf("Failed to create resource at: %s and the error is: %v\n", resp, err)
 		return err
