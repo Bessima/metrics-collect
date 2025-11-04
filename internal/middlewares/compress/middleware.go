@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var compressContentTypes = []string{"application/json", "text/plain"}
+var compressContentTypes = []string{"application/json", "text/html"}
 
 func isAllowCompressContentType(contentType string) bool {
 	for _, item := range compressContentTypes {
@@ -31,9 +31,8 @@ func GZIPMiddleware(handler http.Handler) http.Handler {
 
 		contentEncoding := r.Header.Get("Content-Encoding")
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
-		contentType := r.Header.Get("Content-Type")
 
-		if sendsGzip && isAllowCompressContentType(contentType) {
+		if sendsGzip {
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
 				log.Println(err)

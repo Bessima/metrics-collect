@@ -23,11 +23,16 @@ func (c *compressWriter) Header() http.Header {
 }
 
 func (c *compressWriter) Write(p []byte) (int, error) {
+	contentType := c.w.Header().Get("Content-Type")
+	if !isAllowCompressContentType(contentType) {
+		return c.w.Write(p)
+	}
 	return c.zw.Write(p)
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
-	if statusCode < 300 {
+	contentType := c.w.Header().Get("Content-Type")
+	if statusCode < 300 && isAllowCompressContentType(contentType) {
 		c.w.Header().Set("Content-Encoding", "gzip")
 	}
 	c.w.WriteHeader(statusCode)
@@ -55,10 +60,6 @@ func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 }
 
 func (c compressReader) Read(p []byte) (n int, err error) {
-	return c.zr.Read(p)
-}
-
-func (c compressReader) ReadFrom(p []byte) (n int, err error) {
 	return c.zr.Read(p)
 }
 
