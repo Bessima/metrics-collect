@@ -9,12 +9,12 @@ import (
 	"go.uber.org/zap"
 	"html/template"
 	"net/http"
+	"time"
 )
 
 func main() {
-	config := InitConfig()
 
-	if err := run(config.Address); err != nil {
+	if err := run(); err != nil {
 		panic(err)
 	}
 }
@@ -34,16 +34,39 @@ func getMetricRouter(storage *repository.MemStorage, templates *template.Templat
 	return router
 }
 
-func run(address string) error {
-	templates := handler.ParseAllTemplates()
-
-	storage := repository.NewMemStorage()
-
+func run() error {
 	if err := logger.Initialize("debug"); err != nil {
 		return err
 	}
 
-	logger.Log.Info("Running server on", zap.String("address", address))
+	templates := handler.ParseAllTemplates()
+	config := InitConfig()
+	storage := repository.NewMemStorage()
 
-	return http.ListenAndServe(address, getMetricRouter(&storage, templates))
+	metricsFromFile := repository.MetricsFromFile{}
+
+	if config.Restore {
+		if err := metricsFromFile.Load(config.FileStoragePath); err != nil {
+			logger.Log.Warn(err.Error())
+		} else {
+			logger.Log.Info("Metrics was loaded from file", zap.String("path", config.FileStoragePath))
+			storage.Load(metricsFromFile.Metrics)
+		}
+	}
+
+	logger.Log.Info("Running server on", zap.String("address", config.Address))
+
+	go func() {
+		for {
+			metricsFromFile.Metrics = storage.All()
+			if err := metricsFromFile.Save(config.FileStoragePath); err != nil {
+				logger.Log.Warn(err.Error())
+			} else {
+				logger.Log.Info("Metrics was saved in file", zap.String("path", config.FileStoragePath))
+			}
+			time.Sleep(time.Duration(config.StoreInterval) * time.Second)
+		}
+	}()
+
+	return http.ListenAndServe(config.Address, getMetricRouter(&storage, templates))
 }

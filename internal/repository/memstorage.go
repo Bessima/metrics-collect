@@ -18,6 +18,7 @@ type MemoryStorage interface {
 	Counter(name string, value int64)
 	Replace(name string, value float64)
 	View(typeMetric TypeMetric, name string) float64
+	Load(metrics []models.Metrics)
 }
 
 type MemStorage struct {
@@ -116,4 +117,16 @@ func (ms *MemStorage) All() []models.Metrics {
 		metrics = append(metrics, item)
 	}
 	return metrics
+}
+
+func (ms *MemStorage) Load(metrics []models.Metrics) {
+	ms.mutex.Lock()
+	defer ms.mutex.Unlock()
+	for _, item := range metrics {
+		if TypeMetric(item.MType) == TypeCounter {
+			ms.counters[item.ID] = item
+		} else if TypeMetric(item.MType) == TypeGauge {
+			ms.gauge[item.ID] = item
+		}
+	}
 }
