@@ -41,7 +41,12 @@ func (a *Agent) sendMetrics() {
 				continue
 			}
 
-			err = a.client.SendJSONMetric(typeMetric, name, value)
+			metricRequest, err := agent.NewMetricRequest(typeMetric, name, value)
+			if err != nil {
+				log.Printf("Error getting metric %s: %v", name, err)
+				continue
+			}
+			err = a.client.SendJSONMetric(*metricRequest)
 			if err != nil {
 				log.Printf("Error sending metrics: %s", err)
 				continue

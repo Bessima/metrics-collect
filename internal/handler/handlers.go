@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-func SetMetricHandler(storage *repository.MemStorage) http.HandlerFunc {
+func SetMetricHandler(storage *repository.MemStorage, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		typeMetric := chi.URLParam(request, "typeMetric")
 		metric := chi.URLParam(request, "name")
@@ -44,6 +44,10 @@ func SetMetricHandler(storage *repository.MemStorage) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
+
+		if metricsFromFile != nil {
+			repository.UpdateMetricInFile(storage, metricsFromFile)
+		}
 	}
 }
 

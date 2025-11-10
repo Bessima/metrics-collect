@@ -7,25 +7,32 @@ import (
 )
 
 type MetricsFromFile struct {
-	Metrics []models.Metrics
+	metrics  []models.Metrics
+	FileName string
 }
 
-func (metrics MetricsFromFile) Save(fname string) error {
-	data, err := json.Marshal(metrics.Metrics)
+func (metrics *MetricsFromFile) UpdateMetrics(newMetrics *[]models.Metrics) error {
+	metrics.metrics = *newMetrics
+
+	data, err := json.Marshal(metrics.metrics)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(fname, data, 0666)
+	return os.WriteFile(metrics.FileName, data, 0666)
 }
 
-func (metrics *MetricsFromFile) Load(fname string) error {
-	settingsFile, err := os.ReadFile(fname)
+func (metrics *MetricsFromFile) Load() error {
+	settingsFile, err := os.ReadFile(metrics.FileName)
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(settingsFile, &metrics.Metrics)
+	err = json.Unmarshal(settingsFile, &metrics.metrics)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (metrics *MetricsFromFile) GetMetrics() []models.Metrics {
+	return metrics.metrics
 }

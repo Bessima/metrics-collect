@@ -1,14 +1,10 @@
 package agent
 
 import (
-	"encoding/json"
 	"fmt"
-	models "github.com/Bessima/metrics-collect/internal/model"
-	"github.com/Bessima/metrics-collect/internal/repository"
 	"io"
 	"log"
 	"net/http"
-	"strconv"
 )
 
 type Client struct {
@@ -40,46 +36,15 @@ func (client *Client) SendMetric(typeMetric string, name string, value string) e
 	return nil
 }
 
-func (client *Client) SendJSONMetric(typeMetric repository.TypeMetric, name string, value string) error {
-	postURL := fmt.Sprintf("%s/update/", client.Domain)
-	var requestValue models.Metrics
-
-	switch typeMetric {
-	case repository.TypeCounter:
-		delta, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
-			return err
-		}
-		requestValue = models.Metrics{
-			ID:    name,
-			MType: string(typeMetric),
-			Delta: &delta,
-		}
-	case repository.TypeGauge:
-		val, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			return err
-		}
-		requestValue = models.Metrics{
-			ID:    name,
-			MType: string(typeMetric),
-			Value: &val,
-		}
-	}
-
-	resp, err := json.Marshal(requestValue)
-	if err != nil {
-		log.Printf("Failed to marshal metric: %v\n", err)
-		return err
-	}
-
-	compressData, err := Compress(resp)
+func (client *Client) SendJSONMetric(metricRequest MetricRequest) error {
+	compressData, err := metricRequest.CompressJSONMetric()
 	if err != nil {
 		log.Printf("Failed to compress data: %v\n", err)
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, postURL, &compressData)
+	postURL := fmt.Sprintf("%s/update/", client.Domain)
+	req, err := http.NewRequest(http.MethodPost, postURL, compressData)
 	if err != nil {
 		log.Fatalf("Error creating request: %v", err)
 	}
@@ -88,7 +53,7 @@ func (client *Client) SendJSONMetric(typeMetric repository.TypeMetric, name stri
 
 	response, err := client.HTTPClient.Do(req)
 	if err != nil {
-		log.Printf("Failed to create resource at: %s and the error is: %v\n", resp, err)
+		log.Printf("Failed to create resource at: %s and the error is: %v\n", metricRequest.metric.ID, err)
 		return err
 	}
 
@@ -103,6 +68,6 @@ func (client *Client) SendJSONMetric(typeMetric repository.TypeMetric, name stri
 		return fmt.Errorf("server returned status: %d", response.StatusCode)
 	}
 
-	log.Printf("Successful sending metric %s", resp)
+	log.Printf("Successful sending metric %s", metricRequest.metric.ID)
 	return nil
 }

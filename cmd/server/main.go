@@ -19,16 +19,16 @@ func main() {
 	}
 }
 
-func getMetricRouter(storage *repository.MemStorage, templates *template.Template) chi.Router {
+func getMetricRouter(storage *repository.MemStorage, templates *template.Template, metricsFromFile *repository.MetricsFromFile) chi.Router {
 	router := chi.NewRouter()
 	router.Use(logger.RequestLogger)
 	router.Use(compress.GZIPMiddleware)
 
 	router.Get("/", handler.MainHandler(storage, templates))
 
-	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(storage))
+	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(storage, metricsFromFile))
 	router.Get("/value/{typeMetric}/{name}", handler.ViewMetricValue(storage))
-	router.Post("/update/", handler.UpdateHandler(storage))
+	router.Post("/update/", handler.UpdateHandler(storage, metricsFromFile))
 	router.Post("/value/", handler.ValueHandler(storage))
 
 	return router
@@ -43,30 +43,32 @@ func run() error {
 	config := InitConfig()
 	storage := repository.NewMemStorage()
 
-	metricsFromFile := repository.MetricsFromFile{}
+	metricsFromFile := repository.MetricsFromFile{FileName: *config.FileStoragePath}
 
-	if config.Restore {
-		if err := metricsFromFile.Load(config.FileStoragePath); err != nil {
+	if *config.Restore {
+		if err := metricsFromFile.Load(); err != nil {
 			logger.Log.Warn(err.Error())
 		} else {
-			logger.Log.Info("Metrics was loaded from file", zap.String("path", config.FileStoragePath))
-			storage.Load(metricsFromFile.Metrics)
+			logger.Log.Info("Metrics was loaded from file", zap.String("path", *config.FileStoragePath))
+			storage.Load(metricsFromFile.GetMetrics())
 		}
 	}
 
-	logger.Log.Info("Running server on", zap.String("address", config.Address))
+	logger.Log.Info("Running server on", zap.String("address", *config.Address))
 
 	go func() {
+		if *config.StoreInterval <= 0 {
+			return
+		}
 		for {
-			metricsFromFile.Metrics = storage.All()
-			if err := metricsFromFile.Save(config.FileStoragePath); err != nil {
-				logger.Log.Warn(err.Error())
-			} else {
-				logger.Log.Info("Metrics was saved in file", zap.String("path", config.FileStoragePath))
-			}
-			time.Sleep(time.Duration(config.StoreInterval) * time.Second)
+			repository.UpdateMetricInFile(&storage, &metricsFromFile)
+			time.Sleep(time.Duration(*config.StoreInterval) * time.Second)
 		}
 	}()
 
-	return http.ListenAndServe(config.Address, getMetricRouter(&storage, templates))
+	if *config.StoreInterval == 0 {
+		return http.ListenAndServe(*config.Address, getMetricRouter(&storage, templates, &metricsFromFile))
+	}
+
+	return http.ListenAndServe(*config.Address, getMetricRouter(&storage, templates, nil))
 }

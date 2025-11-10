@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func UpdateHandler(storage *repository.MemStorage) http.HandlerFunc {
+func UpdateHandler(storage *repository.MemStorage, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var metric models.Metrics
 		var buf bytes.Buffer
@@ -46,6 +46,12 @@ func UpdateHandler(storage *repository.MemStorage) http.HandlerFunc {
 			storage.ReplaceGaugeMetric(metric.ID, value)
 			newValue, _ := storage.GetValue(models.Gauge, metric.ID)
 			log.Println("Successful replacing gauge: ", metric.ID, newValue)
+		default:
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if metricsFromFile != nil {
+			repository.UpdateMetricInFile(storage, metricsFromFile)
 		}
 	}
 }

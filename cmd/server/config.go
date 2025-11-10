@@ -3,42 +3,52 @@ package main
 import (
 	"github.com/caarlos0/env"
 	"log"
-	"os"
 )
 
 type Config struct {
-	Address string `env:"ADDRESS"`
+	Address *string `env:"ADDRESS"`
 
-	StoreInterval   int64  `env:"STORE_INTERVAL"`
-	FileStoragePath string `env:"FILE_STORAGE_PATH"`
-	Restore         bool   `env:"RESTORE"`
+	StoreInterval   *int64  `env:"STORE_INTERVAL"`
+	FileStoragePath *string `env:"FILE_STORAGE_PATH"`
+	Restore         *bool   `env:"RESTORE"`
 }
 
 func InitConfig() *Config {
 	var cfg Config
+	cfg.parseEnv()
+	flags := cfg.parseFlag()
+	cfg.mergeConfig(flags)
+
+	return &cfg
+}
+
+func (cfg *Config) parseEnv() {
 	err := env.Parse(&cfg)
 	if err != nil {
 		log.Println(err)
 	}
+}
 
+func (cfg *Config) parseFlag() *ServerFlags {
 	flags := ServerFlags{}
 	flags.Init()
+	return &flags
+}
 
-	if cfg.Address == "" {
-		cfg.Address = flags.address
+func (cfg *Config) mergeConfig(flags *ServerFlags) {
+	if cfg.Address == nil {
+		cfg.Address = &flags.address
 	}
 
-	if _, ok := os.LookupEnv("STORE_INTERVAL"); !ok {
-		cfg.StoreInterval = flags.storeInterval
+	if cfg.StoreInterval == nil {
+		cfg.StoreInterval = &flags.storeInterval
 	}
 
-	if cfg.FileStoragePath == "" {
-		cfg.FileStoragePath = flags.fileStoragePath
+	if cfg.FileStoragePath == nil {
+		cfg.FileStoragePath = &flags.fileStoragePath
 	}
 
-	if _, ok := os.LookupEnv("RESTORE"); !ok {
-		cfg.Restore = flags.restore
+	if cfg.Restore == nil {
+		cfg.Restore = &flags.restore
 	}
-
-	return &cfg
 }
