@@ -8,6 +8,7 @@ import (
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+	"html/template"
 	"net"
 	"net/http"
 	"os/signal"
@@ -26,12 +27,11 @@ func main() {
 	}
 }
 
-func getMetricRouter(storage *repository.MemStorage, metricsFromFile *repository.MetricsFromFile) chi.Router {
+func getMetricRouter(storage *repository.MemStorage, templates *template.Template, metricsFromFile *repository.MetricsFromFile) chi.Router {
 	router := chi.NewRouter()
 	router.Use(logger.RequestLogger)
 	router.Use(compress.GZIPMiddleware)
 
-	templates := handler.ParseAllTemplates()
 	router.Get("/", handler.MainHandler(storage, templates))
 
 	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(storage, metricsFromFile))
@@ -95,11 +95,11 @@ func runServer(config *Config, server *http.Server) {
 
 func getServer(config *Config, storage *repository.MemStorage, metricsFromFile *repository.MetricsFromFile) *http.Server {
 	var router chi.Router
-
+	templates := handler.ParseAllTemplates()
 	if *config.StoreInterval == 0 {
-		router = getMetricRouter(storage, metricsFromFile)
+		router = getMetricRouter(storage, templates, metricsFromFile)
 	} else {
-		router = getMetricRouter(storage, nil)
+		router = getMetricRouter(storage, templates, nil)
 	}
 
 	ongoingCtx := context.TODO()

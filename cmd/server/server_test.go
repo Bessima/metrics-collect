@@ -30,7 +30,7 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 		contentType string
 	}
 
-	testServer := httptest.NewServer(getMetricRouter(&storage, &template.Template{}))
+	testServer := httptest.NewServer(getMetricRouter(&storage, &template.Template{}, nil))
 	defer testServer.Close()
 
 	newCounterMetric := int64(3)
