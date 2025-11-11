@@ -13,37 +13,24 @@ type Config struct {
 }
 
 func InitConfig() *Config {
-	var cfg Config
+	flags := AgentFlags{}
+	flags.Init()
+
+	cfg := Config{
+		ServerAddress:  flags.serverAddress,
+		ReportInterval: flags.reportInterval,
+		PoolInterval:   flags.poolInterval,
+	}
 
 	cfg.parseEnv()
-	flags := cfg.parseFlag()
-	cfg.mergeConfig(flags)
 
 	return &cfg
 }
 
 func (cfg *Config) parseEnv() {
-	err := env.Parse(&cfg)
+	err := env.Parse(cfg)
 	if err != nil {
 		log.Println(err)
-	}
-}
-
-func (cfg *Config) parseFlag() *AgentFlags {
-	flags := AgentFlags{}
-	flags.Init()
-	return &flags
-}
-
-func (cfg *Config) mergeConfig(flags *AgentFlags) {
-	if cfg.ServerAddress == "" {
-		cfg.ServerAddress = flags.serverAddress
-	}
-	if cfg.ReportInterval == 0 {
-		cfg.ReportInterval = flags.reportInterval
-	}
-	if cfg.PoolInterval == 0 {
-		cfg.PoolInterval = flags.poolInterval
 	}
 }
 

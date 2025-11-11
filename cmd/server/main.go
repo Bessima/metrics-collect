@@ -48,66 +48,95 @@ func run() error {
 
 	config := InitConfig()
 	storage := repository.NewMemStorage()
-	metricsFromFile := repository.MetricsFromFile{FileName: *config.FileStoragePath}
+	metricsFromFile := repository.MetricsFromFile{FileName: config.FileStoragePath}
 
-	if *config.Restore {
+	if config.Restore {
 		loadMetricsFromFile(&metricsFromFile, config, &storage)
 	}
 
-	server := getServer(config, &storage, &metricsFromFile)
+	server := getServer(rootCtx, config, &storage, &metricsFromFile)
 
-	go saveMetricsInFile(config, &storage, &metricsFromFile)
-	go runServer(config, server)
+	saveCtx, saveCancel := context.WithCancel(rootCtx)
+	defer saveCancel()
+	go saveMetricsInFile(saveCtx, config, &storage, &metricsFromFile)
 
-	<-rootCtx.Done()
-	stop()
+	serverErr := make(chan error, 1)
+	go func() {
+		logger.Log.Info("Running server on", zap.String("address", config.Address))
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			serverErr <- err
+		} else {
+			serverErr <- nil
+		}
+	}()
+
+	// Ждем сигнал завершения или ошибку сервера
+	var err error
+	select {
+	case <-rootCtx.Done():
+		logger.Log.Info("Received shutdown signal, shutting down.")
+	case err = <-serverErr:
+		logger.Log.Error("Server error", zap.Error(err))
+	}
+
+	// Graceful shutdown
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	if shutdownErr := server.Shutdown(shutdownCtx); shutdownErr != nil {
+		logger.Log.Error("Server shutdown error", zap.Error(shutdownErr))
+	}
 
 	logger.Log.Info("Received shutdown signal, shutting down.")
 	repository.UpdateMetricInFile(&storage, &metricsFromFile)
 
-	return nil
+	saveCancel()
+
+	return err
 }
 
 func loadMetricsFromFile(metricsFromFile *repository.MetricsFromFile, config *Config, storage *repository.MemStorage) {
 	if err := metricsFromFile.Load(); err != nil {
 		logger.Log.Warn(err.Error())
 	} else {
-		logger.Log.Info("Metrics was loaded from file", zap.String("path", *config.FileStoragePath))
+		logger.Log.Info("Metrics was loaded from file", zap.String("path", config.FileStoragePath))
 		storage.Load(metricsFromFile.GetMetrics())
 	}
 }
 
-func saveMetricsInFile(config *Config, storage *repository.MemStorage, metricsFromFile *repository.MetricsFromFile) {
-	if *config.StoreInterval <= 0 {
+func saveMetricsInFile(ctx context.Context, config *Config, storage *repository.MemStorage, metricsFromFile *repository.MetricsFromFile) {
+	if config.StoreInterval <= 0 {
 		return
 	}
+
+	ticker := time.NewTicker(time.Duration(config.StoreInterval) * time.Second)
+	defer ticker.Stop()
+
 	for {
-		repository.UpdateMetricInFile(storage, metricsFromFile)
-		time.Sleep(time.Duration(*config.StoreInterval) * time.Second)
+		select {
+		case <-ticker.C:
+			repository.UpdateMetricInFile(storage, metricsFromFile)
+		case <-ctx.Done():
+			logger.Log.Info("Stopping metrics saver")
+			return
+		}
 	}
 }
 
-func runServer(config *Config, server *http.Server) {
-	logger.Log.Info("Running server on", zap.String("address", *config.Address))
-
-	server.ListenAndServe()
-}
-
-func getServer(config *Config, storage *repository.MemStorage, metricsFromFile *repository.MetricsFromFile) *http.Server {
+func getServer(rootCtx context.Context, config *Config, storage *repository.MemStorage, metricsFromFile *repository.MetricsFromFile) *http.Server {
 	var router chi.Router
 	templates := handler.ParseAllTemplates()
-	if *config.StoreInterval == 0 {
+	if config.StoreInterval == 0 {
 		router = getMetricRouter(storage, templates, metricsFromFile)
 	} else {
 		router = getMetricRouter(storage, templates, nil)
 	}
 
-	ongoingCtx := context.TODO()
 	server := &http.Server{
-		Addr:    *config.Address,
+		Addr:    config.Address,
 		Handler: router,
 		BaseContext: func(_ net.Listener) context.Context {
-			return ongoingCtx
+			return rootCtx
 		},
 	}
 	return server
