@@ -1,8 +1,9 @@
 package main
 
 import (
+	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/caarlos0/env"
-	"log"
+	"go.uber.org/zap"
 )
 
 type Config struct {
@@ -31,6 +32,6 @@ func InitConfig() *Config {
 func (cfg *Config) parseEnv() {
 	err := env.Parse(cfg)
 	if err != nil {
-		log.Fatalf("Getting an error while parsing the configuration", err.Error())
+		logger.Log.Warn("Getting an error while parsing the configuration", zap.String("err", err.Error()))
 	}
 }
