@@ -18,6 +18,7 @@ type MemoryStorage interface {
 	Counter(name string, value int64)
 	Replace(name string, value float64)
 	View(typeMetric TypeMetric, name string) float64
+	Load(metrics []models.Metrics)
 }
 
 type MemStorage struct {
@@ -66,7 +67,7 @@ func (ms *MemStorage) ReplaceGaugeMetric(name string, value float64) {
 	}
 }
 
-func (ms *MemStorage) View(typeMetric TypeMetric, name string) (value interface{}, err error) {
+func (ms *MemStorage) GetValue(typeMetric TypeMetric, name string) (value interface{}, err error) {
 	switch {
 	case typeMetric == TypeCounter:
 		if elem, exists := ms.counters[name]; exists {
@@ -87,6 +88,25 @@ func (ms *MemStorage) View(typeMetric TypeMetric, name string) (value interface{
 	return
 }
 
+func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (models.Metrics, error) {
+	switch {
+	case typeMetric == TypeCounter:
+		if elem, exists := ms.counters[name]; exists {
+			return elem, nil
+		}
+	case typeMetric == TypeGauge:
+		if elem, exists := ms.gauge[name]; exists {
+			return elem, nil
+		}
+	default:
+		err := fmt.Errorf("unknown metric type: %s", typeMetric)
+		return models.Metrics{}, err
+	}
+
+	err := errors.New("metric not found")
+	return models.Metrics{}, err
+}
+
 func (ms *MemStorage) All() []models.Metrics {
 	metrics := make([]models.Metrics, 0, len(ms.counters)+len(ms.gauge))
 
@@ -97,4 +117,16 @@ func (ms *MemStorage) All() []models.Metrics {
 		metrics = append(metrics, item)
 	}
 	return metrics
+}
+
+func (ms *MemStorage) Load(metrics []models.Metrics) {
+	ms.mutex.Lock()
+	defer ms.mutex.Unlock()
+	for _, item := range metrics {
+		if TypeMetric(item.MType) == TypeCounter {
+			ms.counters[item.ID] = item
+		} else if TypeMetric(item.MType) == TypeGauge {
+			ms.gauge[item.ID] = item
+		}
+	}
 }

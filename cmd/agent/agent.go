@@ -10,23 +10,22 @@ import (
 )
 
 type Agent struct {
-	flags   AgentFlags
+	config  *Config
 	client  agent.Client
 	metrics map[repository.TypeMetric]map[string]any
 }
 
 func NewAgent() *Agent {
-	flags := AgentFlags{}
-	flags.Init()
+	config := InitConfig()
 
 	metrics := agent.InitialBaseMetrics()
 
 	client := agent.Client{
-		Domain:     flags.getServerAddressWithProtocol(),
+		Domain:     config.getServerAddressWithProtocol(),
 		HTTPClient: &http.Client{},
 	}
 	return &Agent{
-		flags:   flags,
+		config:  config,
 		metrics: metrics,
 		client:  client,
 	}
@@ -42,7 +41,12 @@ func (a *Agent) sendMetrics() {
 				continue
 			}
 
-			err = a.client.SendMetric(string(typeMetric), name, value)
+			metricRequest, err := agent.NewMetricRequest(typeMetric, name, value)
+			if err != nil {
+				log.Printf("Error getting metric %s: %v", name, err)
+				continue
+			}
+			err = a.client.SendJSONMetric(*metricRequest)
 			if err != nil {
 				log.Printf("Error sending metrics: %s", err)
 				continue
@@ -57,7 +61,7 @@ func (a *Agent) Run() {
 
 		a.sendMetrics()
 
-		ticker := time.NewTicker(time.Duration(a.flags.pollInterval) * time.Second)
+		ticker := time.NewTicker(time.Duration(a.config.PoolInterval) * time.Second)
 		done := make(chan bool)
 
 		go func() {
@@ -71,7 +75,7 @@ func (a *Agent) Run() {
 			}
 		}()
 
-		time.Sleep(time.Duration(a.flags.reportInterval) * time.Second)
+		time.Sleep(time.Duration(a.config.ReportInterval) * time.Second)
 		ticker.Stop()
 		done <- true
 	}
