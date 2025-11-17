@@ -16,9 +16,11 @@ const (
 
 type MemoryStorage interface {
 	Counter(name string, value int64)
-	Replace(name string, value float64)
-	View(typeMetric TypeMetric, name string) float64
+	ReplaceGaugeMetric(name string, value float64)
+	GetValue(typeMetric TypeMetric, name string) (interface{}, error)
+	GetMetric(typeMetric TypeMetric, name string) (models.Metrics, error)
 	Load(metrics []models.Metrics)
+	All() []models.Metrics
 }
 
 type MemStorage struct {
