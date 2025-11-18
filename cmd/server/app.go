@@ -18,16 +18,21 @@ import (
 
 type App struct {
 	config          *Config
-	storage         repository.MemStorage
+	storage         *repository.MemStorage
 	metricsFromFile repository.MetricsFromFile
 	rootContext     context.Context
 }
 
-func NewApp(ctx context.Context) *App {
+func NewApp(ctx context.Context, storage *repository.MemStorage) *App {
 	app := &App{rootContext: ctx}
 
 	app.config = InitConfig()
-	app.storage = repository.NewMemStorage()
+	if storage != nil {
+		app.storage = storage
+	} else {
+		newStorage := repository.NewMemStorage()
+		app.storage = &newStorage
+	}
 	app.metricsFromFile = repository.MetricsFromFile{FileName: app.config.FileStoragePath}
 
 	return app
@@ -63,7 +68,7 @@ func (app *App) saveMetricsInFile(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			repository.UpdateMetricInFile(&app.storage, &app.metricsFromFile)
+			repository.UpdateMetricInFile(app.storage, &app.metricsFromFile)
 		case <-ctx.Done():
 			logger.Log.Info("Stopping metrics saver")
 			return
@@ -97,12 +102,12 @@ func (app *App) getMetricRouter(templates *template.Template, metricsFromFile *r
 	router.Use(logger.RequestLogger)
 	router.Use(compress.GZIPMiddleware)
 
-	router.Get("/", handler.MainHandler(&app.storage, templates))
+	router.Get("/", handler.MainHandler(app.storage, templates))
 
-	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(&app.storage, metricsFromFile))
-	router.Get("/value/{typeMetric}/{name}", handler.ViewMetricValue(&app.storage))
-	router.Post("/update/", handler.UpdateHandler(&app.storage, metricsFromFile))
-	router.Post("/value/", handler.ValueHandler(&app.storage))
+	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(app.storage, metricsFromFile))
+	router.Get("/value/{typeMetric}/{name}", handler.ViewMetricValue(app.storage))
+	router.Post("/update/", handler.UpdateHandler(app.storage, metricsFromFile))
+	router.Post("/value/", handler.ValueHandler(app.storage))
 
 	return router
 }

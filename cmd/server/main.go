@@ -26,7 +26,7 @@ func run() error {
 	rootCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	app := NewApp(rootCtx)
+	app := NewApp(rootCtx, nil)
 
 	if app.config.Restore {
 		app.loadMetricsFromFile()
@@ -67,7 +67,7 @@ func run() error {
 	}
 
 	logger.Log.Info("Received shutdown signal, shutting down.")
-	repository.UpdateMetricInFile(&app.storage, &app.metricsFromFile)
+	repository.UpdateMetricInFile(app.storage, &app.metricsFromFile)
 	defer db.Close()
 
 	saveCancel()

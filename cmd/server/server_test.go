@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/gzip"
+	"context"
 	"fmt"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/stretchr/testify/assert"
@@ -23,6 +24,7 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 	valueGaugeMetric := float64(1.1)
 	storage.Counter(nameCounterMetric, valueCounterMetric)
 	storage.ReplaceGaugeMetric(nameGaugeMetric, valueGaugeMetric)
+	app := NewApp(context.Background(), &storage)
 
 	type want struct {
 		code        int
@@ -30,7 +32,7 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 		contentType string
 	}
 
-	testServer := httptest.NewServer(getMetricRouter(&storage, &template.Template{}, nil))
+	testServer := httptest.NewServer(app.getMetricRouter(&template.Template{}, nil))
 	defer testServer.Close()
 
 	newCounterMetric := int64(3)
