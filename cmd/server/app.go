@@ -51,7 +51,12 @@ func (app *App) initDB() *db.DB {
 	dbObj, errDB := db.NewDB(app.rootContext, app.config.DatabaseDNS)
 
 	if errDB != nil {
-		logger.Log.Error("Unable to connect to database", zap.String("error", errDB.Error()))
+
+		logger.Log.Panic(
+			"Unable to connect to database",
+			zap.String("path", app.config.DatabaseDNS),
+			zap.String("error", errDB.Error()),
+		)
 	}
 
 	return dbObj
