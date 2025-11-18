@@ -16,7 +16,7 @@ func NewDB(ctx context.Context, dns string) (*DB, error) {
 	}
 
 	if err := dbPool.Ping(ctx); err != nil {
-		return nil, err
+		return &DB{Pool: dbPool}, err
 	}
 
 	return &DB{Pool: dbPool}, nil

@@ -52,7 +52,7 @@ func (app *App) initDB() *db.DB {
 
 	if errDB != nil {
 
-		logger.Log.Panic(
+		logger.Log.Error(
 			"Unable to connect to database",
 			zap.String("path", app.config.DatabaseDNS),
 			zap.String("error", errDB.Error()),
