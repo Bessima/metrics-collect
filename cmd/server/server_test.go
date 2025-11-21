@@ -1,18 +1,27 @@
 package main
 
 import (
-	"context"
 	"fmt"
+	"github.com/Bessima/metrics-collect/internal/handler"
 	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"html/template"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 )
+
+func getTestServer(storage *repository.MemStorage) *httptest.Server {
+	router := chi.NewRouter()
+	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(storage, nil))
+
+	testServer := httptest.NewServer(router)
+
+	return testServer
+}
 
 func TestSetMetricHandler_RealRouter(t *testing.T) {
 	storage := repository.NewMemStorage()
@@ -23,7 +32,6 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 	valueGaugeMetric := float64(1.1)
 	storage.Counter(nameCounterMetric, valueCounterMetric)
 	storage.ReplaceGaugeMetric(nameGaugeMetric, valueGaugeMetric)
-	app := NewApp(context.Background(), &storage)
 
 	type want struct {
 		code        int
@@ -31,7 +39,7 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 		contentType string
 	}
 
-	testServer := httptest.NewServer(app.getMetricRouter(&template.Template{}, nil))
+	testServer := getTestServer(&storage)
 	defer testServer.Close()
 
 	newCounterMetric := int64(3)
