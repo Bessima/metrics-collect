@@ -28,7 +28,7 @@ package main
 //	storage.ReplaceGaugeMetric(nameGaugeMetric, valueGaugeMetric)
 //	app := NewApp(context.Background(), &storage)
 //
-//	testServer := httptest.NewServer(app.getMetricRouter(&template.Template{}, nil))
+//	testServer := httptest.NewServer(app.getRouter(&template.Template{}, nil))
 //	defer testServer.Close()
 //
 //	newCounterMetric := int64(3)

@@ -4,11 +4,10 @@ import (
 	"context"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/Bessima/metrics-collect/internal/service"
 	"go.uber.org/zap"
-	"net/http"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 func main() {
@@ -33,21 +32,16 @@ func run() error {
 	}
 
 	db := app.initDB()
-	server := app.getServer(db.Pool)
+	serverService := service.NewServerService(rootCtx, app.config.Address, app.storage)
+	serverService.SetRouter(app.config.StoreInterval, db.Pool, &app.metricsFromFile)
 
 	saveCtx, saveCancel := context.WithCancel(rootCtx)
 	defer saveCancel()
 	go app.saveMetricsInFile(saveCtx)
 
 	serverErr := make(chan error, 1)
-	go func() {
-		logger.Log.Info("Running server on", zap.String("address", app.config.Address))
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			serverErr <- err
-		} else {
-			serverErr <- nil
-		}
-	}()
+	logger.Log.Info("Running Server on", zap.String("address", app.config.Address))
+	go serverService.RunServer(&serverErr)
 
 	// Ждем сигнал завершения или ошибку сервера
 	var err error
@@ -58,11 +52,7 @@ func run() error {
 		logger.Log.Error("Server error", zap.Error(err))
 	}
 
-	// Graceful shutdown
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer shutdownCancel()
-
-	if shutdownErr := server.Shutdown(shutdownCtx); shutdownErr != nil {
+	if shutdownErr := serverService.Shutdown(); shutdownErr != nil {
 		logger.Log.Error("Server shutdown error", zap.Error(shutdownErr))
 	}
 
