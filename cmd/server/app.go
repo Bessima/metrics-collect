@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	configApp "github.com/Bessima/metrics-collect/internal/config"
 	"github.com/Bessima/metrics-collect/internal/config/db"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
@@ -10,7 +11,7 @@ import (
 )
 
 type App struct {
-	config          *Config
+	config          *configApp.Config
 	storage         *repository.MemStorage
 	metricsFromFile repository.MetricsFromFile
 	rootContext     context.Context
@@ -19,7 +20,7 @@ type App struct {
 func NewApp(ctx context.Context, storage *repository.MemStorage) *App {
 	app := &App{rootContext: ctx}
 
-	app.config = InitConfig()
+	app.config = configApp.InitConfig()
 	if storage != nil {
 		app.storage = storage
 	} else {
