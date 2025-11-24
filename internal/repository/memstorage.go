@@ -14,35 +14,26 @@ const (
 	TypeGauge   TypeMetric = "gauge"
 )
 
-type MemoryStorage interface {
-	Counter(name string, value int64)
-	ReplaceGaugeMetric(name string, value float64)
-	GetValue(typeMetric TypeMetric, name string) (interface{}, error)
-	GetMetric(typeMetric TypeMetric, name string) (models.Metrics, error)
-	Load(metrics []models.Metrics)
-	All() []models.Metrics
-}
-
 type MemStorage struct {
 	mutex    sync.RWMutex
 	counters map[string]models.Metrics
 	gauge    map[string]models.Metrics
 }
 
-func NewMemStorage() MemStorage {
-	return MemStorage{
+func NewMemStorage() *MemStorage {
+	return &MemStorage{
 		counters: make(map[string]models.Metrics),
 		gauge:    make(map[string]models.Metrics),
 	}
 }
 
-func (ms *MemStorage) Counter(name string, value int64) {
+func (ms *MemStorage) Counter(name string, value int64) error {
 
 	if elem, exists := ms.counters[name]; exists {
 		ms.mutex.Lock()
 		defer ms.mutex.Unlock()
 		*elem.Delta = *elem.Delta + value
-		return
+		return nil
 	}
 	ms.counters[name] = models.Metrics{
 		ID:    name,
@@ -51,14 +42,15 @@ func (ms *MemStorage) Counter(name string, value int64) {
 		Value: nil,
 		Hash:  "",
 	}
+	return nil
 }
 
-func (ms *MemStorage) ReplaceGaugeMetric(name string, value float64) {
+func (ms *MemStorage) ReplaceGaugeMetric(name string, value float64) error {
 	if elem, exists := ms.gauge[name]; exists {
 		ms.mutex.Lock()
 		defer ms.mutex.Unlock()
 		*elem.Value = value
-		return
+		return nil
 	}
 
 	ms.gauge[name] = models.Metrics{
@@ -67,6 +59,7 @@ func (ms *MemStorage) ReplaceGaugeMetric(name string, value float64) {
 		Value: &value,
 		Delta: nil,
 	}
+	return nil
 }
 
 func (ms *MemStorage) GetValue(typeMetric TypeMetric, name string) (value interface{}, err error) {
@@ -109,7 +102,7 @@ func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (models.Metr
 	return models.Metrics{}, err
 }
 
-func (ms *MemStorage) All() []models.Metrics {
+func (ms *MemStorage) All() ([]models.Metrics, error) {
 	metrics := make([]models.Metrics, 0, len(ms.counters)+len(ms.gauge))
 
 	for _, item := range ms.counters {
@@ -118,10 +111,10 @@ func (ms *MemStorage) All() []models.Metrics {
 	for _, item := range ms.gauge {
 		metrics = append(metrics, item)
 	}
-	return metrics
+	return metrics, nil
 }
 
-func (ms *MemStorage) Load(metrics []models.Metrics) {
+func (ms *MemStorage) Load(metrics []models.Metrics) error {
 	ms.mutex.Lock()
 	defer ms.mutex.Unlock()
 	for _, item := range metrics {
@@ -131,4 +124,9 @@ func (ms *MemStorage) Load(metrics []models.Metrics) {
 			ms.gauge[item.ID] = item
 		}
 	}
+	return nil
+}
+
+func (ms *MemStorage) Close() {
+	return
 }

@@ -15,10 +15,10 @@ import (
 
 type ServerService struct {
 	Server  *http.Server
-	storage *repository.MemStorage
+	storage repository.StorageRepositoryI
 }
 
-func NewServerService(rootContext context.Context, address string, storage *repository.MemStorage) ServerService {
+func NewServerService(rootContext context.Context, address string, storage repository.StorageRepositoryI) ServerService {
 	server := &http.Server{
 		Addr: address,
 		BaseContext: func(_ net.Listener) context.Context {

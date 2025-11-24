@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/Bessima/metrics-collect/internal/config"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/Bessima/metrics-collect/internal/service"
@@ -25,22 +26,26 @@ func run() error {
 	rootCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	app := NewApp(rootCtx, nil)
+	conf := config.InitConfig()
+	storageService := service.NewStorageService(rootCtx, conf)
+	defer storageService.Close()
+
+	app := NewApp(rootCtx, conf, *storageService.GetRepository())
 
 	if app.config.Restore {
 		app.loadMetricsFromFile()
 	}
 
-	db := app.initDB()
-	serverService := service.NewServerService(rootCtx, app.config.Address, app.storage)
-	serverService.SetRouter(app.config.StoreInterval, db.Pool, &app.metricsFromFile)
+	serverService := service.NewServerService(rootCtx, conf.Address, app.storageRepository)
+	//serverService.SetRouter(conf.StoreInterval, db.Pool, &app.metricsFromFile)
+	serverService.SetRouter(conf.StoreInterval, nil, &app.metricsFromFile)
 
 	saveCtx, saveCancel := context.WithCancel(rootCtx)
 	defer saveCancel()
 	go app.saveMetricsInFile(saveCtx)
 
 	serverErr := make(chan error, 1)
-	logger.Log.Info("Running Server on", zap.String("address", app.config.Address))
+	logger.Log.Info("Running Server on", zap.String("address", conf.Address))
 	go serverService.RunServer(&serverErr)
 
 	// Ждем сигнал завершения или ошибку сервера
@@ -57,8 +62,7 @@ func run() error {
 	}
 
 	logger.Log.Info("Received shutdown signal, shutting down.")
-	repository.UpdateMetricInFile(app.storage, &app.metricsFromFile)
-	defer db.Close()
+	repository.UpdateMetricInFile(app.storageRepository, &app.metricsFromFile)
 
 	saveCancel()
 

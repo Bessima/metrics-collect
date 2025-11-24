@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func UpdateHandler(storage *repository.MemStorage, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {
+func UpdateHandler(storage repository.StorageRepositoryI, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var metric models.Metrics
 		var buf bytes.Buffer
@@ -33,7 +33,11 @@ func UpdateHandler(storage *repository.MemStorage, metricsFromFile *repository.M
 				return
 			}
 			delta := *metric.Delta
-			storage.Counter(metric.ID, delta)
+			if err = storage.Counter(metric.ID, delta); err != nil {
+				log.Println("Failed to change delta of counter metric, error: ", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			newValue, _ := storage.GetValue(models.Counter, metric.ID)
 			log.Println("Successful counter: ", metric.ID, newValue)
 		case repository.TypeGauge:
@@ -43,7 +47,11 @@ func UpdateHandler(storage *repository.MemStorage, metricsFromFile *repository.M
 				return
 			}
 			value := *metric.Value
-			storage.ReplaceGaugeMetric(metric.ID, value)
+			if err = storage.ReplaceGaugeMetric(metric.ID, value); err != nil {
+				log.Println("Failed to change value of gauge metric, error: ", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			newValue, _ := storage.GetValue(models.Gauge, metric.ID)
 			log.Println("Successful replacing gauge: ", metric.ID, newValue)
 		default:

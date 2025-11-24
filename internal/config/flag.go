@@ -5,8 +5,8 @@ import (
 )
 
 const defaultStoreInterval = 30
-const metricsPath = "metrics.json"
-const defaultDBDNS = "postgresql://username:password@localhost:5432/metrics"
+const metricsPath = ""
+const defaultDBDNS = ""
 
 type ServerFlags struct {
 	address string

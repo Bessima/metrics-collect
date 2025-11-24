@@ -36,3 +36,37 @@ func (metrics *MetricsFromFile) Load() error {
 func (metrics *MetricsFromFile) GetMetrics() []models.Metrics {
 	return metrics.metrics
 }
+
+type FileStorageRepository struct {
+}
+
+func NewFileStorageRepository(FileName string) *FileStorageRepository {
+	return &FileStorageRepository{}
+}
+
+func (repository *FileStorageRepository) Counter(name string, value int64) error {
+	return nil
+}
+
+func (repository *FileStorageRepository) ReplaceGaugeMetric(name string, value float64) error {
+	return nil
+}
+
+func (repository *FileStorageRepository) GetValue(typeMetric TypeMetric, name string) (interface{}, error) {
+	return nil, nil
+}
+
+func (repository *FileStorageRepository) GetMetric(typeMetric TypeMetric, name string) (models.Metrics, error) {
+	return models.Metrics{}, nil
+}
+
+func (repository *FileStorageRepository) Load(metrics []models.Metrics) error {
+	return nil
+}
+func (repository *FileStorageRepository) All() ([]models.Metrics, error) {
+	return nil, nil
+}
+
+func (repository *FileStorageRepository) Close() {
+	return
+}

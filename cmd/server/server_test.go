@@ -39,7 +39,7 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 		contentType string
 	}
 
-	testServer := getTestServer(&storage)
+	testServer := getTestServer(storage)
 	defer testServer.Close()
 
 	newCounterMetric := int64(3)
