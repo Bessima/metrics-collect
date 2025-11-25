@@ -123,7 +123,7 @@ func (repository *FileStorageRepository) GetMetric(typeMetric TypeMetric, name s
 			return metric, nil
 		}
 	}
-	err = errors.New(fmt.Sprintf("Metric %s with type %s not found", name, typeMetricS))
+	err = fmt.Errorf("Metric %s with type %s not found", name, typeMetricS)
 
 	return models.Metrics{}, err
 }
@@ -165,7 +165,7 @@ func (repository *FileStorageRepository) All() ([]models.Metrics, error) {
 }
 
 func (repository *FileStorageRepository) Ping(ctx context.Context) error {
-	err := errors.New("Current command only for DB. Server is working with file storage now.")
+	err := errors.New("current command only for DB. Server is working with file storage now")
 	return err
 }
 

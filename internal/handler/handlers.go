@@ -30,7 +30,10 @@ func SetMetricHandler(storage repository.StorageRepositoryI, metricsFromFile *re
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			newValue, _ := storage.GetValue(models.Counter, metric)
+			newValue, err := storage.GetValue(models.Counter, metric)
+			if err != nil {
+				log.Println("Failed to get value of counter metric, error: ", err)
+			}
 			log.Println("Successful counter: ", metric, newValue)
 		case repository.TypeGauge:
 			value, err := strconv.ParseFloat(chi.URLParam(request, "value"), 64)
@@ -45,7 +48,10 @@ func SetMetricHandler(storage repository.StorageRepositoryI, metricsFromFile *re
 				return
 			}
 
-			newValue, _ := storage.GetValue(models.Gauge, metric)
+			newValue, err := storage.GetValue(models.Gauge, metric)
+			if err != nil {
+				log.Println("Failed to get value of gauge metric, error: ", err)
+			}
 			log.Println("Successful replacing gauge: ", metric, newValue)
 		default:
 			w.WriteHeader(http.StatusBadRequest)

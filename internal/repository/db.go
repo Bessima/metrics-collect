@@ -37,7 +37,7 @@ func (repository *DBRepository) Counter(name string, value int64) error {
 	}
 	affected := result.RowsAffected()
 	if affected == 0 {
-		return errors.New("Counter metric is not changed")
+		return errors.New("counter metric is not changed")
 	}
 	return nil
 }
@@ -51,7 +51,7 @@ func (repository *DBRepository) ReplaceGaugeMetric(name string, value float64) e
 	affected := result.RowsAffected()
 
 	if affected == 0 {
-		return errors.New("Gaunge metric is not changed")
+		return errors.New("gauge metric is not changed")
 	}
 	return nil
 }
@@ -71,7 +71,7 @@ func (repository *DBRepository) GetValue(typeMetric TypeMetric, name string) (in
 		err = fmt.Errorf("unknown metric type: %s", typeMetric)
 	}
 
-	return nil, nil
+	return nil, err
 }
 
 func (repository *DBRepository) GetMetric(typeMetric TypeMetric, name string) (models.Metrics, error) {
@@ -110,7 +110,9 @@ func (repository *DBRepository) Load(metrics []models.Metrics) error {
 }
 func (repository *DBRepository) All() ([]models.Metrics, error) {
 	rows, err := repository.db.Pool.Query(context.Background(), "SELECT name, type, value, delta FROM metrics")
-
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	metrics := []models.Metrics{}

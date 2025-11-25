@@ -128,8 +128,8 @@ func (ms *MemStorage) Load(metrics []models.Metrics) error {
 	return nil
 }
 
-func (repository *MemStorage) Ping(ctx context.Context) error {
-	err := errors.New("Current command only for DB. Server is working with memory storage now.")
+func (ms *MemStorage) Ping(ctx context.Context) error {
+	err := errors.New("current command only for DB. Server is working with memory storage now")
 	return err
 }
 
