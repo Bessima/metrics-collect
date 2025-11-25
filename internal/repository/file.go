@@ -47,6 +47,16 @@ type FileStorageRepository struct {
 }
 
 func NewFileStorageRepository(filename string) *FileStorageRepository {
+	file, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0666)
+	if err != nil {
+		logger.Log.Error(
+			"Unable to open file",
+			zap.String("filename", filename),
+			zap.String("error", err.Error()),
+		)
+	}
+	defer file.Close()
+
 	return &FileStorageRepository{FileName: filename}
 }
 

@@ -1,5 +1,5 @@
 
-CREATE TABLE metrics (
+CREATE TABLE IF NOT EXISTS metrics (
                          name VARCHAR(255) NOT NULL,
                          type VARCHAR(100) NOT NULL,
                          value DOUBLE PRECISION,
