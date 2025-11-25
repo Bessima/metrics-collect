@@ -133,6 +133,11 @@ func (repository *DBRepository) All() ([]models.Metrics, error) {
 	return metrics, nil
 }
 
+func (repository *DBRepository) Ping(ctx context.Context) error {
+	err := repository.db.Pool.Ping(ctx)
+	return err
+}
+
 func (repository *DBRepository) Close() error {
 	repository.db.Close()
 	return nil

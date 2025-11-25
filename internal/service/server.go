@@ -7,7 +7,6 @@ import (
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"net"
 	"net/http"
 	"time"
@@ -28,7 +27,7 @@ func NewServerService(rootContext context.Context, address string, storage repos
 	return ServerService{Server: server, storage: storage}
 }
 
-func (serverService *ServerService) SetRouter(storeInterval int64, pool *pgxpool.Pool, metricsFromFile *repository.MetricsFromFile) {
+func (serverService *ServerService) SetRouter(storeInterval int64, metricsFromFile *repository.MetricsFromFile) {
 	var router chi.Router
 
 	if storeInterval == 0 {
@@ -36,8 +35,6 @@ func (serverService *ServerService) SetRouter(storeInterval int64, pool *pgxpool
 	} else {
 		router = serverService.getRouter(nil)
 	}
-
-	router.Get("/ping", handler.PingHandler(pool))
 
 	serverService.Server.Handler = router
 }
@@ -55,6 +52,7 @@ func (serverService *ServerService) getRouter(metricsFromFile *repository.Metric
 	router.Get("/value/{typeMetric}/{name}", handler.ViewMetricValue(serverService.storage))
 	router.Post("/update/", handler.UpdateHandler(serverService.storage, metricsFromFile))
 	router.Post("/value/", handler.ValueHandler(serverService.storage))
+	router.Get("/ping", handler.PingHandler(serverService.storage))
 
 	return router
 }

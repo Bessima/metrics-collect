@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -161,6 +162,11 @@ func (repository *FileStorageRepository) All() ([]models.Metrics, error) {
 	}
 
 	return metrics, nil
+}
+
+func (repository *FileStorageRepository) Ping(ctx context.Context) error {
+	err := errors.New("Current command only for DB. Server is working with file storage now.")
+	return err
 }
 
 func (repository *FileStorageRepository) Close() error {

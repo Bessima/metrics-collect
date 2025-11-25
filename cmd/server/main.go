@@ -30,6 +30,8 @@ func run() error {
 	storageService := service.NewStorageService(rootCtx, conf)
 	defer storageService.Close()
 
+	storageService.GetRepository()
+
 	app := NewApp(rootCtx, conf, *storageService.GetRepository())
 
 	if app.config.Restore {
@@ -37,8 +39,7 @@ func run() error {
 	}
 
 	serverService := service.NewServerService(rootCtx, conf.Address, app.storageRepository)
-	//serverService.SetRouter(conf.StoreInterval, db.Pool, &app.metricsFromFile)
-	serverService.SetRouter(conf.StoreInterval, nil, &app.metricsFromFile)
+	serverService.SetRouter(conf.StoreInterval, &app.metricsFromFile)
 
 	saveCtx, saveCancel := context.WithCancel(rootCtx)
 	defer saveCancel()

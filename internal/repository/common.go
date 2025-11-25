@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"go.uber.org/zap"
@@ -14,6 +15,7 @@ type StorageRepositoryI interface {
 	Load(metrics []models.Metrics) error
 	All() ([]models.Metrics, error)
 	Close() error
+	Ping(ctx context.Context) error
 }
 
 func UpdateMetricInFile(storage StorageRepositoryI, metricsFromFile *MetricsFromFile) {
