@@ -81,9 +81,9 @@ func (repository *FileStorageRepository) ReplaceGaugeMetric(name string, value f
 	hasInFile := false
 	typeGauge := string(TypeGauge)
 
-	for _, metric := range metrics {
-		if metric.MType == typeGauge && metric.ID == name {
-			metric.Value = &value
+	for i := range metrics {
+		if metrics[i].MType == typeGauge && metrics[i].ID == name {
+			metrics[i].Value = &value
 			hasInFile = true
 			break
 		}
@@ -98,6 +98,9 @@ func (repository *FileStorageRepository) ReplaceGaugeMetric(name string, value f
 
 func (repository *FileStorageRepository) GetValue(typeMetric TypeMetric, name string) (interface{}, error) {
 	metric, err := repository.GetMetric(typeMetric, name)
+	if err != nil {
+		return nil, err
+	}
 	switch typeMetric {
 	case TypeCounter:
 		return metric.Delta, err
@@ -123,7 +126,7 @@ func (repository *FileStorageRepository) GetMetric(typeMetric TypeMetric, name s
 			return metric, nil
 		}
 	}
-	err = fmt.Errorf("Metric %s with type %s not found", name, typeMetricS)
+	err = fmt.Errorf("metric %s with type %s not found", name, typeMetricS)
 
 	return models.Metrics{}, err
 }
