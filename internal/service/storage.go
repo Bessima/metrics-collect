@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/Bessima/metrics-collect/internal/config"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
@@ -29,7 +30,7 @@ func (service *StorageService) setRepository(ctx context.Context) {
 
 	if service.config.FileStoragePath != "" {
 		service.repository = repository.NewFileStorageRepository(service.config.FileStoragePath)
-		logger.Log.Info("Working with FILE")
+		logger.Log.Info(fmt.Sprintf("Working with FILE %s", service.config.FileStoragePath))
 		return
 	}
 	service.repository = repository.NewMemStorage()

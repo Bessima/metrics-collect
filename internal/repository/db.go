@@ -133,6 +133,7 @@ func (repository *DBRepository) All() ([]models.Metrics, error) {
 	return metrics, nil
 }
 
-func (repository *DBRepository) Close() {
+func (repository *DBRepository) Close() error {
 	repository.db.Close()
+	return nil
 }

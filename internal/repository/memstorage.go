@@ -127,6 +127,6 @@ func (ms *MemStorage) Load(metrics []models.Metrics) error {
 	return nil
 }
 
-func (ms *MemStorage) Close() {
-	return
+func (ms *MemStorage) Close() error {
+	return nil
 }

@@ -13,7 +13,7 @@ type StorageRepositoryI interface {
 	GetMetric(typeMetric TypeMetric, name string) (models.Metrics, error)
 	Load(metrics []models.Metrics) error
 	All() ([]models.Metrics, error)
-	Close()
+	Close() error
 }
 
 func UpdateMetricInFile(storage StorageRepositoryI, metricsFromFile *MetricsFromFile) {
