@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type Client struct {
@@ -51,10 +52,23 @@ func (client *Client) SendData(data *bytes.Buffer) error {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Content-Encoding", "gzip")
 
-	response, err := client.HTTPClient.Do(req)
-	if err != nil {
-		log.Printf("Failed sending resources, error is: %v\n", err)
-		return err
+	const maxRetries = 3
+	timeToSleeps := []time.Duration{1, 3, 5}
+	var lastErr error
+	var response *http.Response
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		response, lastErr = client.HTTPClient.Do(req)
+		if lastErr == nil {
+			break
+		}
+		log.Printf("Trying to send data to server: %v\n", lastErr)
+		time.Sleep(timeToSleeps[attempt] * time.Second)
+	}
+
+	if lastErr != nil {
+		log.Printf("Failed sending resources, error is: %v\n", lastErr)
+		return lastErr
 	}
 
 	defer func() {
@@ -68,7 +82,7 @@ func (client *Client) SendData(data *bytes.Buffer) error {
 		return fmt.Errorf("server returned status: %d", response.StatusCode)
 	}
 
-	log.Printf("Successful sending part metrics %d", data.Len())
+	log.Print("Successful sending data")
 	return nil
 }
 

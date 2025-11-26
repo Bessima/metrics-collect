@@ -7,7 +7,11 @@ import (
 	"github.com/Bessima/metrics-collect/internal/config/db"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	models "github.com/Bessima/metrics-collect/internal/model"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"go.uber.org/zap"
+	"log"
+	"time"
 )
 
 type DBRepository struct {
@@ -31,7 +35,9 @@ func NewDBRepository(rootContext context.Context, databaseDNS string) *DBReposit
 
 func (repository *DBRepository) Counter(name string, value int64) error {
 	query := `INSERT INTO metrics (name, type, delta) VALUES ($1, $2, $3) ON CONFLICT (name, type) DO UPDATE SET delta = metrics.delta + EXCLUDED.delta`
-	result, err := repository.db.Pool.Exec(context.Background(), query, name, TypeCounter, value)
+
+	result, err := repository.addRetryExec(repository.db.Pool.Exec, context.Background(), query, name, TypeCounter, value)
+
 	if err != nil {
 		return err
 	}
@@ -44,7 +50,8 @@ func (repository *DBRepository) Counter(name string, value int64) error {
 
 func (repository *DBRepository) ReplaceGaugeMetric(name string, value float64) error {
 	query := "INSERT INTO metrics (name, type, value) VALUES ($1, $2, $3) ON CONFLICT (name, type) DO UPDATE SET value = EXCLUDED.value"
-	result, err := repository.db.Pool.Exec(context.Background(), query, name, TypeGauge, value)
+
+	result, err := repository.addRetryExec(repository.db.Pool.Exec, context.Background(), query, name, TypeGauge, value)
 	if err != nil {
 		return err
 	}
@@ -77,7 +84,7 @@ func (repository *DBRepository) GetValue(typeMetric TypeMetric, name string) (in
 func (repository *DBRepository) GetMetric(typeMetric TypeMetric, name string) (models.Metrics, error) {
 	row := repository.db.Pool.QueryRow(
 		context.Background(),
-		"SELECT name, type, value, delta FROM metrics WHERE name = $1 AND type = $2 LIMIT 1",
+		"SELECT name, type, value, delta FROM metrics WHERE name = $1 AND type = $2",
 		name,
 		typeMetric,
 	)
@@ -107,7 +114,7 @@ func (repository *DBRepository) Load(metrics []models.Metrics) error {
 	}
 
 	for _, m := range metrics {
-		_, err = tx.Exec(ctx, stmt.SQL, m.ID, m.MType, m.Value, m.Delta)
+		_, err = repository.addRetryExec(tx.Exec, ctx, stmt.SQL, m.ID, m.MType, m.Value, m.Delta)
 		if err != nil {
 			tx.Rollback(ctx)
 			return err
@@ -144,11 +151,69 @@ func (repository *DBRepository) All() ([]models.Metrics, error) {
 }
 
 func (repository *DBRepository) Ping(ctx context.Context) error {
-	err := repository.db.Pool.Ping(ctx)
-	return err
+	const maxRetries = 3
+	timeToSleeps := []time.Duration{1, 3, 5}
+	var lastErr error
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		lastErr = repository.db.Pool.Ping(ctx)
+		if lastErr == nil {
+			return nil
+		}
+
+		if !IsConnectionExceptionPG(lastErr) {
+			return lastErr
+		}
+		log.Printf("Trying to exec request for DB: %v\n", lastErr)
+		time.Sleep(timeToSleeps[attempt] * time.Second)
+	}
+
+	return fmt.Errorf("after retry not running ping command, last error: %v", lastErr)
 }
 
 func (repository *DBRepository) Close() error {
 	repository.db.Close()
 	return nil
+}
+
+func (repository *DBRepository) addRetryExec(requestExec func(ctx context.Context, query string, arguments ...any) (pgconn.CommandTag, error), ctx context.Context, query string, args ...any) (pgconn.CommandTag, error) {
+	const maxRetries = 3
+	timeToSleeps := []time.Duration{1, 3, 5}
+	var lastErr error
+	var result pgconn.CommandTag
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		result, lastErr = requestExec(ctx, query, args...)
+		if lastErr == nil {
+			return result, nil
+		}
+
+		if !IsConnectionExceptionPG(lastErr) {
+			return result, lastErr
+		}
+		log.Printf("Trying to exec request for DB: %v\n", lastErr)
+		time.Sleep(timeToSleeps[attempt] * time.Second)
+	}
+
+	return result, fmt.Errorf("after retry not running exec command, last error: %v", lastErr)
+}
+
+func IsConnectionExceptionPG(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		switch pgErr.Code {
+		// Класс 08 - Ошибки соединения
+		case pgerrcode.ConnectionException,
+			pgerrcode.ConnectionDoesNotExist,
+			pgerrcode.ConnectionFailure,
+			pgerrcode.SQLClientUnableToEstablishSQLConnection,
+			pgerrcode.SQLServerRejectedEstablishmentOfSQLConnection,
+			pgerrcode.TransactionResolutionUnknown,
+			pgerrcode.ProtocolViolation:
+			return true
+		default:
+			return false
+		}
+	}
+	return false
 }

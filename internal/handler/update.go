@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"net/http"
@@ -26,6 +27,7 @@ func UpdateHandler(storage repository.StorageRepositoryI, metricsFromFile *repos
 
 		err = updateMetricInStorage(storage, metric)
 		if err != nil {
+			logger.Log.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 		if metricsFromFile != nil {
