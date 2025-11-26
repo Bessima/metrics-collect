@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Bessima/metrics-collect/internal/agent"
 	"github.com/Bessima/metrics-collect/internal/common"
+	models "github.com/Bessima/metrics-collect/internal/model"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"log"
 	"net/http"
@@ -32,28 +33,38 @@ func NewAgent() *Agent {
 }
 
 func (a *Agent) sendMetrics() {
+	sizeForSending := 10
+	var metrics []models.Metrics
 
-	for typeMetric, m := range a.metrics {
-		for name, anyValue := range m {
-			value, err := common.ConvertInterfaceToStr(anyValue)
+	for typeMetric, metric := range a.metrics {
+		for name, anyValue := range metric {
+			if len(metrics) < sizeForSending {
+				value, err := common.ConvertInterfaceToStr(anyValue)
+				if err != nil {
+					log.Printf("Error converting interface to metric %s: %v", name, err)
+					continue
+				}
+				newMetric, err := agent.GetMetric(typeMetric, name, value)
+				if err != nil {
+					log.Printf("Error getting object metric %s: %v", name, err)
+					continue
+				}
+				metrics = append(metrics, newMetric)
+			}
+			data, err := agent.CompressJSONMetrics(metrics)
 			if err != nil {
-				log.Printf("Error converting interface to metric %s: %v", name, err)
+				log.Printf("Failed to compress data: %v\n", err)
 				continue
 			}
-
-			metricRequest, err := agent.NewMetricRequest(typeMetric, name, value)
-			if err != nil {
-				log.Printf("Error getting metric %s: %v", name, err)
-				continue
-			}
-			err = a.client.SendJSONMetric(*metricRequest)
+			err = a.client.SendData(data)
 			if err != nil {
 				log.Printf("Error sending metrics: %s", err)
 				continue
 			}
+			metrics = metrics[:0]
 		}
 	}
-
+	log.Printf("All data sent successfully")
 }
 
 func (a *Agent) Run() {

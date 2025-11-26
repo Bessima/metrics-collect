@@ -95,11 +95,19 @@ func (repository *DBRepository) Load(metrics []models.Metrics) error {
 	if err != nil {
 		return err
 	}
-	for _, v := range metrics {
-		_, err := tx.Exec(ctx,
-			"INSERT INTO metrics (name, type, value, delta) VALUES($1,$2,$3,$4) ON CONFLICT (name, type) DO UPDATE SET value = EXCLUDED.value",
-			v.ID, v.MType, v.Value, v.Delta,
-		)
+
+	stmt, err := tx.Prepare(
+		ctx,
+		"insert or update metric",
+		"INSERT INTO metrics (name, type, value, delta) VALUES($1,$2,$3,$4)"+
+			" ON CONFLICT (name, type) DO UPDATE SET value = EXCLUDED.value",
+	)
+	if err != nil {
+		return err
+	}
+
+	for _, m := range metrics {
+		_, err = tx.Exec(ctx, stmt.SQL, m.ID, m.MType, m.Value, m.Delta)
 		if err != nil {
 			tx.Rollback(ctx)
 			return err

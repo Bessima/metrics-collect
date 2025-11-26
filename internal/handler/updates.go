@@ -8,9 +8,9 @@ import (
 	"net/http"
 )
 
-func UpdateHandler(storage repository.StorageRepositoryI, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {
+func UpdatesHandler(storage repository.StorageRepositoryI, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var metric models.Metrics
+		var metrics []models.Metrics
 		var buf bytes.Buffer
 
 		_, err := buf.ReadFrom(r.Body)
@@ -19,15 +19,18 @@ func UpdateHandler(storage repository.StorageRepositoryI, metricsFromFile *repos
 			return
 		}
 
-		if err = json.Unmarshal(buf.Bytes(), &metric); err != nil {
+		if err = json.Unmarshal(buf.Bytes(), &metrics); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		err = updateMetricInStorage(storage, metric)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		for _, metric := range metrics {
+			err := updateMetricInStorage(storage, metric)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			}
 		}
+
 		if metricsFromFile != nil {
 			repository.UpdateMetricInFile(storage, metricsFromFile)
 		}
