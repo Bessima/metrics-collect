@@ -33,7 +33,7 @@ func NewAgent() *Agent {
 }
 
 func (a *Agent) sendMetrics() {
-	sizeForSending := 10
+	sizeForSending := 100
 	var metrics []models.Metrics
 
 	for typeMetric, metric := range a.metrics {

@@ -18,7 +18,8 @@ type App struct {
 
 func NewApp(ctx context.Context, config *configApp.Config, storage repository.StorageRepositoryI) *App {
 	app := &App{rootContext: ctx, config: config, storageRepository: storage}
-	app.metricsFromFile = repository.MetricsFromFile{FileName: app.config.FileStoragePath}
+
+	app.metricsFromFile = repository.NewMetricsFromFile(app.config.FileStoragePath)
 
 	return app
 }
@@ -28,6 +29,7 @@ func (app *App) loadMetricsFromFile() {
 	case *repository.FileStorageRepository:
 		return
 	default:
+
 		if err := app.metricsFromFile.Load(); err != nil {
 			logger.Log.Warn(err.Error())
 			return
