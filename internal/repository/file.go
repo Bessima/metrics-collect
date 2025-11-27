@@ -16,7 +16,10 @@ type MetricsFromFile struct {
 	FileName string
 }
 
-func NewMetricsFromFile(filename string) MetricsFromFile {
+func NewMetricsFromFile(filename string) *MetricsFromFile {
+	if filename == "" {
+		return nil
+	}
 	file, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
 		logger.Log.Error(
@@ -26,7 +29,7 @@ func NewMetricsFromFile(filename string) MetricsFromFile {
 		)
 	}
 	defer file.Close()
-	return MetricsFromFile{FileName: filename}
+	return &MetricsFromFile{FileName: filename}
 }
 
 func (metrics *MetricsFromFile) UpdateMetrics(newMetrics *[]models.Metrics) error {

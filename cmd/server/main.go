@@ -39,7 +39,7 @@ func run() error {
 	}
 
 	serverService := service.NewServerService(rootCtx, conf.Address, app.storageRepository)
-	serverService.SetRouter(conf.StoreInterval, &app.metricsFromFile)
+	serverService.SetRouter(conf.StoreInterval, app.metricsFromFile)
 
 	saveCtx, saveCancel := context.WithCancel(rootCtx)
 	defer saveCancel()
@@ -63,7 +63,7 @@ func run() error {
 	}
 
 	logger.Log.Info("Received shutdown signal, shutting down.")
-	repository.UpdateMetricInFile(app.storageRepository, &app.metricsFromFile)
+	repository.UpdateMetricInFile(app.storageRepository, app.metricsFromFile)
 
 	saveCancel()
 

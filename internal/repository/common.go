@@ -19,6 +19,10 @@ type StorageRepositoryI interface {
 }
 
 func UpdateMetricInFile(storage StorageRepositoryI, metricsFromFile *MetricsFromFile) {
+	if metricsFromFile == nil {
+		return
+	}
+
 	newMetrics, err := storage.All()
 	if err != nil {
 		logger.Log.Warn(err.Error())

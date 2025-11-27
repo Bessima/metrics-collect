@@ -12,7 +12,7 @@ import (
 type App struct {
 	config            *configApp.Config
 	storageRepository repository.StorageRepositoryI
-	metricsFromFile   repository.MetricsFromFile
+	metricsFromFile   *repository.MetricsFromFile
 	rootContext       context.Context
 }
 
@@ -25,6 +25,9 @@ func NewApp(ctx context.Context, config *configApp.Config, storage repository.St
 }
 
 func (app *App) loadMetricsFromFile() {
+	if app.metricsFromFile == nil {
+		return
+	}
 	switch app.storageRepository.(type) {
 	case *repository.FileStorageRepository:
 		return
@@ -44,6 +47,9 @@ func (app *App) saveMetricsInFile(ctx context.Context) {
 	if app.config.StoreInterval <= 0 {
 		return
 	}
+	if app.metricsFromFile == nil {
+		return
+	}
 
 	ticker := time.NewTicker(time.Duration(app.config.StoreInterval) * time.Second)
 	defer ticker.Stop()
@@ -51,7 +57,7 @@ func (app *App) saveMetricsInFile(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			repository.UpdateMetricInFile(app.storageRepository, &app.metricsFromFile)
+			repository.UpdateMetricInFile(app.storageRepository, app.metricsFromFile)
 		case <-ctx.Done():
 			logger.Log.Info("Stopping metrics saver")
 			return
