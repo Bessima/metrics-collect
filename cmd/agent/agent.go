@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/Bessima/metrics-collect/internal/agent"
 	"github.com/Bessima/metrics-collect/internal/common"
 	models "github.com/Bessima/metrics-collect/internal/model"
@@ -33,38 +34,56 @@ func NewAgent() *Agent {
 }
 
 func (a *Agent) sendMetrics() {
-	sizeForSending := 100
+	sizeForSending := 10
+	needSendMetrics := false
 	var metrics []models.Metrics
 
 	for typeMetric, metric := range a.metrics {
 		for name, anyValue := range metric {
-			if len(metrics) < sizeForSending {
-				value, err := common.ConvertInterfaceToStr(anyValue)
-				if err != nil {
-					log.Printf("Error converting interface to metric %s: %v", name, err)
-					continue
-				}
-				newMetric, err := agent.GetMetric(typeMetric, name, value)
-				if err != nil {
-					log.Printf("Error getting object metric %s: %v", name, err)
-					continue
-				}
-				metrics = append(metrics, newMetric)
-			}
-			data, err := agent.CompressJSONMetrics(metrics)
+			value, err := common.ConvertInterfaceToStr(anyValue)
 			if err != nil {
-				log.Printf("Failed to compress data: %v\n", err)
+				log.Printf("Error converting interface to metric %s: %v", name, err)
 				continue
 			}
-			err = a.client.SendData(data)
+			newMetric, err := agent.GetMetric(typeMetric, name, value)
 			if err != nil {
-				log.Printf("Error sending metrics: %s", err)
+				log.Printf("Error getting object metric %s: %v", name, err)
 				continue
 			}
-			metrics = metrics[:0]
+			metrics = append(metrics, newMetric)
+			needSendMetrics = true
+
+			if len(metrics) == sizeForSending {
+				err := a.sendCompressMetrics(metrics)
+				if err != nil {
+					log.Printf("Error sending metrics: %v", err)
+				}
+				metrics = metrics[:0]
+				needSendMetrics = false
+			}
+		}
+	}
+	if needSendMetrics {
+		err := a.sendCompressMetrics(metrics)
+		if err != nil {
+			log.Printf("Error sending metrics: %v", err)
 		}
 	}
 	log.Printf("All data sent successfully")
+}
+
+func (a *Agent) sendCompressMetrics(metrics []models.Metrics) error {
+	data, err := agent.CompressJSONMetrics(metrics)
+	if err != nil {
+		return fmt.Errorf("failed to compress data: %v", err)
+	}
+	err = a.client.SendData(data)
+	if err != nil {
+		return fmt.Errorf("error sending metrics: %s", err)
+	}
+
+	log.Printf("metrics in count (%d) sent successfully", len(metrics))
+	return nil
 }
 
 func (a *Agent) Run() {

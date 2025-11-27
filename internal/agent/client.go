@@ -2,16 +2,17 @@ package agent
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/Bessima/metrics-collect/internal/retry"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 type Client struct {
@@ -45,45 +46,38 @@ func (client *Client) SendMetric(typeMetric string, name string, value string) e
 
 func (client *Client) SendData(data *bytes.Buffer) error {
 	postURL := fmt.Sprintf("%s/updates/", client.Domain)
-	req, err := http.NewRequest(http.MethodPost, postURL, data)
-	if err != nil {
-		log.Fatalf("Error creating request: %v", err)
-	}
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Content-Encoding", "gzip")
 
-	const maxRetries = 3
-	timeToSleeps := []time.Duration{1, 3, 5}
-	var lastErr error
-	var response *http.Response
-
-	for attempt := 0; attempt < maxRetries; attempt++ {
-		response, lastErr = client.HTTPClient.Do(req)
-		if lastErr == nil {
-			break
+	return retry.DoRetry(context.Background(), func() error {
+		req, err := http.NewRequest(http.MethodPost, postURL, data)
+		if err != nil {
+			log.Fatalf("Error creating request: %v", err)
 		}
-		log.Printf("Trying to send data to server: %v\n", lastErr)
-		time.Sleep(timeToSleeps[attempt] * time.Second)
-	}
+		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Encoding", "gzip")
 
-	if lastErr != nil {
-		log.Printf("Failed sending resources, error is: %v\n", lastErr)
-		return lastErr
-	}
+		var response *http.Response
 
-	defer func() {
-		if err := response.Body.Close(); err != nil {
-			log.Printf("Error closing response body: %v\n", err)
+		response, err = client.HTTPClient.Do(req)
+		if err != nil {
+			log.Printf("Failed sending resources, error is: %v\n", err)
+			return err
 		}
-	}()
-	if response.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(response.Body)
-		log.Printf("Server returned non-OK status: %d, body: %s\n", response.StatusCode, string(body))
-		return fmt.Errorf("server returned status: %d", response.StatusCode)
-	}
 
-	log.Print("Successful sending data")
-	return nil
+		defer func() {
+			if err := response.Body.Close(); err != nil {
+				log.Printf("Error closing response body: %v\n", err)
+			}
+		}()
+		if response.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(response.Body)
+			log.Printf("Server returned non-OK status: %d, body: %s\n", response.StatusCode, string(body))
+			return fmt.Errorf("server returned status: %d", response.StatusCode)
+		}
+
+		log.Print("Successful sending data")
+		return nil
+	}, retry.AgentRetryConfig)
+
 }
 
 func GetMetric(typeMetric repository.TypeMetric, name string, value string) (models.Metrics, error) {
