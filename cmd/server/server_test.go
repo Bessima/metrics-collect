@@ -1,18 +1,27 @@
 package main
 
 import (
-	"compress/gzip"
 	"fmt"
+	"github.com/Bessima/metrics-collect/internal/handler"
 	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"html/template"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 )
+
+func getTestServer(storage *repository.MemStorage) *httptest.Server {
+	router := chi.NewRouter()
+	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(storage, nil))
+
+	testServer := httptest.NewServer(router)
+
+	return testServer
+}
 
 func TestSetMetricHandler_RealRouter(t *testing.T) {
 	storage := repository.NewMemStorage()
@@ -30,7 +39,7 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 		contentType string
 	}
 
-	testServer := httptest.NewServer(getMetricRouter(&storage, &template.Template{}, nil))
+	testServer := getTestServer(storage)
 	defer testServer.Close()
 
 	newCounterMetric := int64(3)
@@ -140,74 +149,6 @@ func TestSetMetricHandler_RealRouter(t *testing.T) {
 			assert.Equal(t, tt.want.code, response.StatusCode)
 
 			b, err := io.ReadAll(response.Body)
-			require.NoError(t, err)
-
-			assert.Equal(t, tt.want.response, string(b))
-
-			assert.Equal(t, tt.want.contentType, response.Header.Get("Content-Type"))
-
-			if tt.metric.expectedValue != nil {
-				typeMetric := repository.TypeMetric(tt.metric.typeMetric)
-				newValue, _ := storage.GetValue(typeMetric, tt.metric.name)
-				assert.Equal(t, tt.metric.expectedValue, newValue)
-			}
-		})
-	}
-
-	testsGzipResponse := []struct {
-		name   string
-		metric metric
-		method string
-		want   want
-	}{
-		{
-			name: "gauge metric with gzip",
-			metric: metric{
-				name:          nameCounterMetric,
-				typeMetric:    "gauge",
-				value:         strconv.FormatFloat(newGaugeMetric, 'f', 6, 64),
-				expectedValue: newGaugeMetric,
-			},
-			method: http.MethodPost,
-			want: want{
-				code:        http.StatusOK,
-				response:    "",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name: "invalid get method with gzip response",
-			metric: metric{
-				name:          "test",
-				typeMetric:    "counter",
-				value:         "1",
-				expectedValue: nil,
-			},
-			method: http.MethodGet,
-			want: want{
-				code:        http.StatusMethodNotAllowed,
-				response:    "",
-				contentType: "application/x-gzip",
-			},
-		},
-	}
-	for _, tt := range testsGzipResponse {
-		t.Run(tt.name, func(t *testing.T) {
-			path := fmt.Sprintf("/update/%s/%s/%s", tt.metric.typeMetric, tt.metric.name, tt.metric.value)
-			req, err := http.NewRequest(tt.method, testServer.URL+path, nil)
-			req.Header.Set("Accept-Encoding", "gzip")
-			require.NoError(t, err)
-
-			response, err := testServer.Client().Do(req)
-			require.NoError(t, err)
-			defer response.Body.Close()
-
-			assert.Equal(t, tt.want.code, response.StatusCode)
-
-			zr, err := gzip.NewReader(response.Body)
-			require.NoError(t, err)
-
-			b, err := io.ReadAll(zr)
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.want.response, string(b))

@@ -1,11 +1,12 @@
-package main
+package config
 
 import (
 	"flag"
 )
 
 const defaultStoreInterval = 30
-const metricsPath = "metrics.json"
+const metricsPath = ""
+const defaultDBDNS = ""
 
 type ServerFlags struct {
 	address string
@@ -13,6 +14,7 @@ type ServerFlags struct {
 	storeInterval   int64
 	fileStoragePath string
 	restore         bool
+	dbDNS           string
 }
 
 func (flags *ServerFlags) Init() {
@@ -21,6 +23,8 @@ func (flags *ServerFlags) Init() {
 	flag.Int64Var(&flags.storeInterval, "i", defaultStoreInterval, "store interval")
 	flag.StringVar(&flags.fileStoragePath, "f", metricsPath, "file storage path")
 	flag.BoolVar(&flags.restore, "r", false, "restore")
+
+	flag.StringVar(&flags.dbDNS, "d", defaultDBDNS, "db dns")
 
 	flag.Parse()
 }

@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func ValueHandler(storage *repository.MemStorage) http.HandlerFunc {
+func ValueHandler(storage repository.StorageRepositoryI) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		var requestMetric models.RequestValueMetric
 

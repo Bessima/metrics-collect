@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
@@ -12,6 +12,7 @@ type Config struct {
 	StoreInterval   int64  `env:"STORE_INTERVAL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	Restore         bool   `env:"RESTORE"`
+	DatabaseDNS     string `env:"DATABASE_DSN"`
 }
 
 func InitConfig() *Config {
@@ -23,6 +24,7 @@ func InitConfig() *Config {
 		StoreInterval:   flags.storeInterval,
 		FileStoragePath: flags.fileStoragePath,
 		Restore:         flags.restore,
+		DatabaseDNS:     flags.dbDNS,
 	}
 	cfg.parseEnv()
 

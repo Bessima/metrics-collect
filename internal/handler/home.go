@@ -12,9 +12,12 @@ type MetricsData struct {
 	Metrics []models.Metrics
 }
 
-func MainHandler(storage *repository.MemStorage, templates *template.Template) http.HandlerFunc {
+func MainHandler(storage repository.StorageRepositoryI, templates *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
-		metrics := storage.All()
+		metrics, err := storage.All()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 
 		data := MetricsData{
 			Title:   "System Metrics",
@@ -22,7 +25,7 @@ func MainHandler(storage *repository.MemStorage, templates *template.Template) h
 		}
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		err := templates.ExecuteTemplate(w, "index.html", data)
+		err = templates.ExecuteTemplate(w, "index.html", data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
