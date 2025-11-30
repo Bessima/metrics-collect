@@ -77,7 +77,12 @@ func (a *Agent) sendCompressMetrics(metrics []models.Metrics) error {
 	if err != nil {
 		return fmt.Errorf("failed to compress data: %v", err)
 	}
-	err = a.client.SendData(data)
+	hash := ""
+	if a.config.Key != "" {
+		hash = common.GetHashData(data.Bytes(), a.config.Key)
+	}
+
+	err = a.client.SendData(data, hash)
 	if err != nil {
 		return fmt.Errorf("error sending metrics: %s", err)
 	}

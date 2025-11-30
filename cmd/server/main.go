@@ -38,7 +38,7 @@ func run() error {
 		app.loadMetricsFromFile()
 	}
 
-	serverService := service.NewServerService(rootCtx, conf.Address, app.storageRepository)
+	serverService := service.NewServerService(rootCtx, conf.Address, conf.KeyHash, app.storageRepository)
 	serverService.SetRouter(conf.StoreInterval, app.metricsFromFile)
 
 	saveCtx, saveCancel := context.WithCancel(rootCtx)

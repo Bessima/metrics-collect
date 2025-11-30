@@ -13,6 +13,8 @@ type Config struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	Restore         bool   `env:"RESTORE"`
 	DatabaseDNS     string `env:"DATABASE_DSN"`
+
+	KeyHash string `env:"KEY"`
 }
 
 func InitConfig() *Config {
@@ -25,6 +27,7 @@ func InitConfig() *Config {
 		FileStoragePath: flags.fileStoragePath,
 		Restore:         flags.restore,
 		DatabaseDNS:     flags.dbDNS,
+		KeyHash:         flags.keyHash,
 	}
 	cfg.parseEnv()
 
