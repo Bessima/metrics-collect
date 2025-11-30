@@ -15,6 +15,7 @@ type ServerFlags struct {
 	fileStoragePath string
 	restore         bool
 	dbDNS           string
+	keyHash         string
 }
 
 func (flags *ServerFlags) Init() {
@@ -25,6 +26,7 @@ func (flags *ServerFlags) Init() {
 	flag.BoolVar(&flags.restore, "r", false, "restore")
 
 	flag.StringVar(&flags.dbDNS, "d", defaultDBDNS, "db dns")
+	flag.StringVar(&flags.keyHash, "k", "", "key for hash")
 
 	flag.Parse()
 }

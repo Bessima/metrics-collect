@@ -10,6 +10,7 @@ type Config struct {
 	ServerAddress  string `env:"ADDRESS"`
 	ReportInterval int64  `env:"REPORT_INTERVAL"`
 	PoolInterval   int64  `env:"POLL_INTERVAL"`
+	Key            string `env:"KEY"`
 }
 
 func InitConfig() *Config {
@@ -20,6 +21,7 @@ func InitConfig() *Config {
 		ServerAddress:  flags.serverAddress,
 		ReportInterval: flags.reportInterval,
 		PoolInterval:   flags.poolInterval,
+		Key:            flags.key,
 	}
 
 	cfg.parseEnv()
