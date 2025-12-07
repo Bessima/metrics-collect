@@ -4,6 +4,7 @@ import (
 	"github.com/Bessima/metrics-collect/internal/common"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/shirou/gopsutil/v4/mem"
 	"log"
 	"math/rand"
 	"runtime"
@@ -81,4 +82,27 @@ func AddMemStats(metrics chan models.Metrics) {
 func AddBaseMetrics(metrics chan models.Metrics, poolCount int64) {
 	AddPoolCounter(metrics, poolCount)
 	AddMemStats(metrics)
+}
+
+func AdditionalMemMetrics(metrics chan models.Metrics) {
+	v, _ := mem.VirtualMemory()
+
+	newMetrics := map[string]any{"TotalMemory": v.Total, "FreeMemory": v.Free, "CPUutilization1": v.UsedPercent}
+
+	for name, anyValue := range newMetrics {
+		value, err := common.ConvertInterfaceToStr(anyValue)
+		if err != nil {
+			log.Printf("Error converting interface to metric %s: %v", name, err)
+			continue
+		}
+		metric, err := GetMetric(repository.TypeGauge, name, value)
+		if err != nil {
+			log.Printf("Error getting object metric %s: %v", CounterPollCountMetric, err)
+			return
+		}
+		metrics <- metric
+	}
+
+	log.Print("Add additional metrics")
+
 }

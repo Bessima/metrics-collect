@@ -86,6 +86,7 @@ func (a *Agent) Run() {
 					return
 				case <-ticker.C:
 					go agent.AddBaseMetrics(metricsForSend, counter)
+					go agent.AdditionalMemMetrics(metricsForSend)
 					counter++
 				}
 			}
