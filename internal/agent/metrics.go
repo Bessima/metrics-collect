@@ -1,7 +1,10 @@
 package agent
 
 import (
+	"github.com/Bessima/metrics-collect/internal/common"
+	models "github.com/Bessima/metrics-collect/internal/model"
 	"github.com/Bessima/metrics-collect/internal/repository"
+	"log"
 	"math/rand"
 	"runtime"
 )
@@ -14,47 +17,68 @@ func GetAllMemStats() map[string]any {
 	runtime.ReadMemStats(&m)
 
 	return map[string]any{
-		"Alloc":         m.Alloc,
-		"BuckHashSys":   m.BuckHashSys,
-		"Frees":         m.Frees,
-		"GCCPUFraction": m.GCCPUFraction,
-		"GCSys":         m.GCSys,
-		"HeapAlloc":     m.HeapAlloc,
-		"HeapIdle":      m.HeapIdle,
-		"HeapInuse":     m.HeapInuse,
-		"HeapObjects":   m.HeapObjects,
-		"HeapReleased":  m.HeapReleased,
-		"HeapSys":       m.HeapSys,
-		"LastGC":        m.LastGC,
-		"Lookups":       m.Lookups,
-		"MCacheInuse":   m.MCacheInuse,
-		"MCacheSys":     m.MCacheSys,
-		"MSpanInuse":    m.MSpanInuse,
-		"MSpanSys":      m.MSpanSys,
-		"Mallocs":       m.Mallocs,
-		"NextGC":        m.NextGC,
-		"NumForcedGC":   m.NumForcedGC,
-		"NumGC":         m.NumGC,
-		"OtherSys":      m.OtherSys,
-		"PauseTotalNs":  m.PauseTotalNs,
-		"StackInuse":    m.StackInuse,
-		"StackSys":      m.StackSys,
-		"Sys":           m.Sys,
-		"TotalAlloc":    m.TotalAlloc,
+		"Alloc":           m.Alloc,
+		"BuckHashSys":     m.BuckHashSys,
+		"Frees":           m.Frees,
+		"GCCPUFraction":   m.GCCPUFraction,
+		"GCSys":           m.GCSys,
+		"HeapAlloc":       m.HeapAlloc,
+		"HeapIdle":        m.HeapIdle,
+		"HeapInuse":       m.HeapInuse,
+		"HeapObjects":     m.HeapObjects,
+		"HeapReleased":    m.HeapReleased,
+		"HeapSys":         m.HeapSys,
+		"LastGC":          m.LastGC,
+		"Lookups":         m.Lookups,
+		"MCacheInuse":     m.MCacheInuse,
+		"MCacheSys":       m.MCacheSys,
+		"MSpanInuse":      m.MSpanInuse,
+		"MSpanSys":        m.MSpanSys,
+		"Mallocs":         m.Mallocs,
+		"NextGC":          m.NextGC,
+		"NumForcedGC":     m.NumForcedGC,
+		"NumGC":           m.NumGC,
+		"OtherSys":        m.OtherSys,
+		"PauseTotalNs":    m.PauseTotalNs,
+		"StackInuse":      m.StackInuse,
+		"StackSys":        m.StackSys,
+		"Sys":             m.Sys,
+		"TotalAlloc":      m.TotalAlloc,
+		GaugeRandomMetric: rand.Int63(),
 	}
 }
 
-func InitialBaseMetrics() map[repository.TypeMetric]map[string]any {
-	metrics := map[repository.TypeMetric]map[string]any{}
-	metrics[repository.TypeCounter] = map[string]any{CounterPollCountMetric: int64(1)}
-	metrics[repository.TypeGauge] = GetAllMemStats()
-	metrics[repository.TypeGauge][GaugeRandomMetric] = rand.Int63()
-	return metrics
+func AddPoolCounter(metrics chan models.Metrics, poolCount int64) {
+	value, err := common.ConvertInterfaceToStr(poolCount)
+	if err != nil {
+		log.Printf("Error converting interface to metric %s: %v", CounterPollCountMetric, err)
+		return
+	}
+	metric, err := GetMetric(repository.TypeCounter, CounterPollCountMetric, value)
+	if err != nil {
+		log.Printf("Error getting object metric %s: %v", CounterPollCountMetric, err)
+		return
+	}
+	metrics <- metric
 }
 
-func UpdateMetrics(metrics map[repository.TypeMetric]map[string]any) map[repository.TypeMetric]map[string]any {
-	metrics[repository.TypeGauge] = GetAllMemStats()
-	metrics[repository.TypeCounter][CounterPollCountMetric] = metrics[repository.TypeCounter][CounterPollCountMetric].(int64) + 1
-	metrics[repository.TypeGauge][GaugeRandomMetric] = rand.Int63()
-	return metrics
+func AddMemStats(metrics chan models.Metrics) {
+	for name, anyValue := range GetAllMemStats() {
+		value, err := common.ConvertInterfaceToStr(anyValue)
+		if err != nil {
+			log.Printf("Error converting interface to metric %s: %v", name, err)
+			continue
+		}
+		metric, err := GetMetric(repository.TypeGauge, name, value)
+		if err != nil {
+			log.Printf("Error getting object metric %s: %v", CounterPollCountMetric, err)
+			return
+		}
+		metrics <- metric
+	}
+}
+
+func AddBaseMetrics(metrics chan models.Metrics, poolCount int64) {
+	AddPoolCounter(metrics, poolCount)
+	AddMemStats(metrics)
 }
