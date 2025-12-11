@@ -57,8 +57,8 @@ func (a *Agent) workerSendData(metrics <-chan models.Metrics, results chan<- str
 }
 
 func (a *Agent) Run() {
-	metricsForSend := make(chan models.Metrics, 100)
-	resultSending := make(chan string, 100)
+	metricsForSend := make(chan models.Metrics, a.config.RateLimit)
+	resultSending := make(chan string, a.config.RateLimit)
 	counter := int64(1)
 
 	defer close(metricsForSend)

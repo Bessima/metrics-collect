@@ -47,7 +47,7 @@ func HashCheckerMiddleware(keyHash string) func(handler http.Handler) http.Handl
 				http.Error(w, "Data was not transferred fully", http.StatusBadRequest)
 				return
 			}
-			logger.Log.Info("Hashes was equal")
+			logger.Log.Debug("Hashes was equal")
 			hw := HashResponseWriter{ResponseWriter: w, keyHash: keyHash}
 
 			next.ServeHTTP(hw, r)

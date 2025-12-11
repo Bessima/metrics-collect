@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"fmt"
 	"github.com/Bessima/metrics-collect/internal/common"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"github.com/Bessima/metrics-collect/internal/repository"
@@ -49,43 +50,61 @@ func GetAllMemStats() map[string]any {
 	}
 }
 
-func AddPoolCounter(metrics chan models.Metrics, poolCount int64) {
+func AddPoolCounter(metrics chan models.Metrics, poolCount int64) error {
 	value, err := common.ConvertInterfaceToStr(poolCount)
 	if err != nil {
-		log.Printf("Error converting interface to metric %s: %v", CounterPollCountMetric, err)
-		return
+		return fmt.Errorf("error converting interface to metric %s: %v", CounterPollCountMetric, err)
 	}
 	metric, err := GetMetric(repository.TypeCounter, CounterPollCountMetric, value)
 	if err != nil {
-		log.Printf("Error getting object metric %s: %v", CounterPollCountMetric, err)
-		return
+		return fmt.Errorf("error getting object metric %s: %v", CounterPollCountMetric, err)
 	}
 	metrics <- metric
+	return nil
 }
 
-func AddMemStats(metrics chan models.Metrics) {
+func AddMemStats(metrics chan models.Metrics) []error {
+	errors := make([]error, 0)
 	for name, anyValue := range GetAllMemStats() {
 		value, err := common.ConvertInterfaceToStr(anyValue)
 		if err != nil {
-			log.Printf("Error converting interface to metric %s: %v", name, err)
+			errors = append(
+				errors,
+				fmt.Errorf("error converting interface to metric %s: %v", name, err),
+			)
 			continue
 		}
 		metric, err := GetMetric(repository.TypeGauge, name, value)
 		if err != nil {
-			log.Printf("Error getting object metric %s: %v", CounterPollCountMetric, err)
-			return
+			errors = append(
+				errors,
+				fmt.Errorf("error getting object metric %s: %v", CounterPollCountMetric, err),
+			)
+			continue
 		}
 		metrics <- metric
 	}
+	return errors
 }
 
 func AddBaseMetrics(metrics chan models.Metrics, poolCount int64) {
-	AddPoolCounter(metrics, poolCount)
-	AddMemStats(metrics)
+	errors := AddMemStats(metrics)
+	err := AddPoolCounter(metrics, poolCount)
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	for _, err = range errors {
+		log.Println(err)
+	}
 }
 
 func AdditionalMemMetrics(metrics chan models.Metrics) {
-	v, _ := mem.VirtualMemory()
+	v, err := mem.VirtualMemory()
+	if err != nil || v == nil {
+		log.Printf("Error getting additional metrics %v", err)
+		return
+	}
 
 	newMetrics := map[string]any{"TotalMemory": v.Total, "FreeMemory": v.Free, "CPUutilization1": v.UsedPercent}
 
