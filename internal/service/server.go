@@ -7,6 +7,7 @@ import (
 	hashMiddleware "github.com/Bessima/metrics-collect/internal/middlewares/hash"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/Bessima/metrics-collect/pkg/audit"
 	"github.com/go-chi/chi/v5"
 	"net"
 	"net/http"
@@ -29,19 +30,19 @@ func NewServerService(rootContext context.Context, address string, hashKey strin
 	return ServerService{Server: server, storage: storage, hashKey: hashKey}
 }
 
-func (serverService *ServerService) SetRouter(storeInterval int64, metricsFromFile *repository.MetricsFromFile) {
+func (serverService *ServerService) SetRouter(storeInterval int64, metricsFromFile *repository.MetricsFromFile, auditEvent *audit.Event) {
 	var router chi.Router
 
 	if storeInterval == 0 {
-		router = serverService.getRouter(metricsFromFile)
+		router = serverService.getRouter(metricsFromFile, auditEvent)
 	} else {
-		router = serverService.getRouter(nil)
+		router = serverService.getRouter(nil, auditEvent)
 	}
 
 	serverService.Server.Handler = router
 }
 
-func (serverService *ServerService) getRouter(metricsFromFile *repository.MetricsFromFile) chi.Router {
+func (serverService *ServerService) getRouter(metricsFromFile *repository.MetricsFromFile, auditEvent *audit.Event) chi.Router {
 	router := chi.NewRouter()
 
 	router.Use(logger.RequestLogger)
@@ -57,7 +58,7 @@ func (serverService *ServerService) getRouter(metricsFromFile *repository.Metric
 	router.Post("/update/", handler.UpdateHandler(serverService.storage, metricsFromFile))
 	router.Post("/value/", handler.ValueHandler(serverService.storage))
 
-	router.Post("/updates/", handler.UpdatesHandler(serverService.storage, metricsFromFile))
+	router.Post("/updates/", handler.UpdatesHandler(serverService.storage, metricsFromFile, auditEvent))
 
 	router.Get("/ping", handler.PingHandler(serverService.storage))
 

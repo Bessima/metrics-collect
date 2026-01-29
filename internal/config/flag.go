@@ -16,6 +16,8 @@ type ServerFlags struct {
 	restore         bool
 	dbDNS           string
 	keyHash         string
+	auditFile       string
+	auditURL        string
 }
 
 func (flags *ServerFlags) Init() {
@@ -27,6 +29,9 @@ func (flags *ServerFlags) Init() {
 
 	flag.StringVar(&flags.dbDNS, "d", defaultDBDNS, "db dns")
 	flag.StringVar(&flags.keyHash, "k", "", "key for hash")
+
+	flag.StringVar(&flags.auditFile, "audit-file", "", "path to audit file")
+	flag.StringVar(&flags.auditURL, "audit-url", "", "address for applying audit data")
 
 	flag.Parse()
 }

@@ -15,6 +15,9 @@ type Config struct {
 	DatabaseDNS     string `env:"DATABASE_DSN"`
 
 	KeyHash string `env:"KEY"`
+
+	AuditFile string `env:"AUDIT_FILE"`
+	AuditURL  string `env:"AUDIT_URL"`
 }
 
 func InitConfig() *Config {
@@ -28,6 +31,8 @@ func InitConfig() *Config {
 		Restore:         flags.restore,
 		DatabaseDNS:     flags.dbDNS,
 		KeyHash:         flags.keyHash,
+		AuditFile:       flags.auditFile,
+		AuditURL:        flags.auditURL,
 	}
 	cfg.parseEnv()
 
