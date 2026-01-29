@@ -316,12 +316,12 @@ func TestEvent_Notify_EmptyMetrics(t *testing.T) {
 
 func TestAuditEventDTO_Structure(t *testing.T) {
 	event := AuditEventDTO{
-		Ts:        1234567890,
+		TS:        1234567890,
 		Metrics:   []string{"metric1", "metric2"},
 		IPAddress: "192.168.1.1",
 	}
 
-	assert.Equal(t, 1234567890, event.Ts)
+	assert.Equal(t, 1234567890, event.TS)
 	assert.Equal(t, 2, len(event.Metrics))
 	assert.Equal(t, "metric1", event.Metrics[0])
 	assert.Equal(t, "metric2", event.Metrics[1])

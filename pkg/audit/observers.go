@@ -41,7 +41,7 @@ func NewFileSubscriber(filename string) *FileSubscriber {
 }
 
 func (observer *FileSubscriber) notify(metrics []string, ip string, ts int) error {
-	event := AuditEventDTO{Ts: ts, Metrics: metrics, IPAddress: ip}
+	event := AuditEventDTO{TS: ts, Metrics: metrics, IPAddress: ip}
 	data, err := json.Marshal(event)
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func (observer *URLSubscriber) getName() string {
 }
 
 func (observer *URLSubscriber) notify(metrics []string, ip string, ts int) error {
-	event := AuditEventDTO{Ts: ts, Metrics: metrics, IPAddress: ip}
+	event := AuditEventDTO{TS: ts, Metrics: metrics, IPAddress: ip}
 	data, err := json.Marshal(event)
 	if err != nil {
 		return err
@@ -130,7 +130,6 @@ func (observer *URLSubscriber) notify(metrics []string, ip string, ts int) error
 		return nil
 	}, retry.AgentRetryConfig)
 
-	return nil
 }
 
 type Event struct {
