@@ -25,9 +25,12 @@ func MainHandler(storage repository.StorageRepositoryI, templates *template.Temp
 		}
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		err = templates.ExecuteTemplate(w, "index.html", data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if templates != nil {
+			err = templates.ExecuteTemplate(w, "index.html", data)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 		}
+
 	}
 }

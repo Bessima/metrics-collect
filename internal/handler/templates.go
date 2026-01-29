@@ -5,5 +5,9 @@ import (
 )
 
 func ParseAllTemplates() (tmpl *template.Template) {
-	return template.Must(template.ParseGlob("templates/*.html"))
+	templates, err := template.ParseGlob("templates/*.html")
+	if templates != nil {
+		return template.Must(templates, err)
+	}
+	return nil
 }

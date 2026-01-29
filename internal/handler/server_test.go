@@ -1,8 +1,7 @@
-package main
+package handler
 
 import (
 	"fmt"
-	"github.com/Bessima/metrics-collect/internal/handler"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +15,7 @@ import (
 
 func getTestServer(storage *repository.MemStorage) *httptest.Server {
 	router := chi.NewRouter()
-	router.Post("/update/{typeMetric}/{name}/{value}", handler.SetMetricHandler(storage, nil))
+	router.Post("/update/{typeMetric}/{name}/{value}", SetMetricHandler(storage, nil))
 
 	testServer := httptest.NewServer(router)
 
