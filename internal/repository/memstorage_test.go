@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"testing"
+	"time"
 
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"github.com/stretchr/testify/assert"
@@ -429,7 +430,346 @@ func TestMemStorage_Close(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TestMemStorage_ConcurrentCounterCreation проверяет race condition при создании новых счетчиков
+// Запустите с флагом -race для обнаружения проблемы:
+//
+//	go test -race -run=TestMemStorage_ConcurrentCounterCreation ./internal/repository/
+func TestMemStorage_ConcurrentCounterCreation(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping race condition test in short mode")
+	}
+
+	storage := NewMemStorage()
+	numGoroutines := 100
+	numOperations := 1000
+
+	// Создаем канал для синхронизации старта всех горутин
+	start := make(chan struct{})
+	done := make(chan struct{})
+
+	// Запускаем горутины, которые будут создавать НОВЫЕ метрики
+	for i := 0; i < numGoroutines; i++ {
+		go func(id int) {
+			<-start // Ждем сигнала для старта
+			for j := 0; j < numOperations; j++ {
+				// Каждая горутина создает свои уникальные метрики
+				metricName := "counter_goroutine_" + string(rune(id)) + "_" + string(rune(j))
+				_ = storage.Counter(metricName, 1)
+			}
+			done <- struct{}{}
+		}(i)
+	}
+
+	// Даем сигнал всем горутинам начать одновременно
+	close(start)
+
+	// Ждем завершения всех горутин
+	for i := 0; i < numGoroutines; i++ {
+		<-done
+	}
+
+	// Проверяем, что все метрики были созданы
+	metrics, err := storage.All()
+	require.NoError(t, err)
+	expectedCount := numGoroutines * numOperations
+	assert.Equal(t, expectedCount, len(metrics), "Expected %d metrics, got %d", expectedCount, len(metrics))
+}
+
+// TestMemStorage_ConcurrentAllRead проверяет race condition в методе All()
+// при одновременном чтении и записи
+func TestMemStorage_ConcurrentAllRead(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping race condition test in short mode")
+	}
+
+	storage := NewMemStorage()
+	stopChan := make(chan struct{})
+
+	// Предварительно создаем метрики
+	for i := 0; i < 100; i++ {
+		_ = storage.Counter("counter_"+string(rune(i)), int64(i))
+	}
+
+	// Горутина, которая постоянно читает все метрики
+	go func() {
+		for {
+			select {
+			case <-stopChan:
+				return
+			default:
+				_, _ = storage.All()
+			}
+		}
+	}()
+
+	// Горутина, которая постоянно обновляет метрики
+	go func() {
+		for {
+			select {
+			case <-stopChan:
+				return
+			default:
+				_ = storage.Counter("counter_50", 1)
+			}
+		}
+	}()
+
+	// Запускаем на некоторое время
+	time.Sleep(100 * time.Millisecond)
+	close(stopChan)
+
+	// Даем время горутинам завершиться
+	time.Sleep(10 * time.Millisecond)
+}
+
 // Helper function to create pointers
 func ptr[T any](v T) *T {
 	return &v
+}
+
+// ==================== BENCHMARKS ====================
+
+// BenchmarkMemStorageCounter_Sequential измеряет производительность последовательных операций Counter
+func BenchmarkMemStorageCounter_Sequential(b *testing.B) {
+	storage := NewMemStorage()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = storage.Counter("test_counter", 1)
+	}
+}
+
+// BenchmarkMemStorageCounter_NewMetrics измеряет создание новых метрик (worst case - без блокировок)
+func BenchmarkMemStorageCounter_NewMetrics(b *testing.B) {
+	storage := NewMemStorage()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		metricName := "counter_" + string(rune(i))
+		_ = storage.Counter(metricName, 1)
+	}
+}
+
+// BenchmarkMemStorageCounter_Parallel измеряет конкурентный доступ к одной метрике
+func BenchmarkMemStorageCounter_Parallel(b *testing.B) {
+	storage := NewMemStorage()
+
+	// Предварительно создаем метрику
+	_ = storage.Counter("shared_counter", 0)
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_ = storage.Counter("shared_counter", 1)
+		}
+	})
+}
+
+// BenchmarkMemStorageCounter_ParallelMultiple измеряет конкурентный доступ к разным метрикам
+func BenchmarkMemStorageCounter_ParallelMultiple(b *testing.B) {
+	storage := NewMemStorage()
+	numMetrics := 100
+
+	// Предварительно создаем метрики
+	for i := 0; i < numMetrics; i++ {
+		_ = storage.Counter("counter_"+string(rune(i)), 0)
+	}
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		i := 0
+		for pb.Next() {
+			metricName := "counter_" + string(rune(i%numMetrics))
+			_ = storage.Counter(metricName, 1)
+			i++
+		}
+	})
+}
+
+// BenchmarkMemStorageGauge_Sequential измеряет производительность последовательных операций Gauge
+func BenchmarkMemStorageGauge_Sequential(b *testing.B) {
+	storage := NewMemStorage()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = storage.ReplaceGaugeMetric("test_gauge", 3.14)
+	}
+}
+
+// BenchmarkMemStorageGauge_Parallel измеряет конкурентный доступ к одной gauge-метрике
+func BenchmarkMemStorageGauge_Parallel(b *testing.B) {
+	storage := NewMemStorage()
+
+	// Предварительно создаем метрику
+	_ = storage.ReplaceGaugeMetric("shared_gauge", 0.0)
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_ = storage.ReplaceGaugeMetric("shared_gauge", 3.14)
+		}
+	})
+}
+
+// BenchmarkMemStorageGetValue измеряет производительность чтения метрик
+func BenchmarkMemStorageGetValue(b *testing.B) {
+	storage := NewMemStorage()
+	_ = storage.Counter("test_counter", 42)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = storage.GetValue(TypeCounter, "test_counter")
+	}
+}
+
+// BenchmarkMemStorageGetValue_Parallel измеряет конкурентное чтение
+func BenchmarkMemStorageGetValue_Parallel(b *testing.B) {
+	storage := NewMemStorage()
+	_ = storage.Counter("test_counter", 42)
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_, _ = storage.GetValue(TypeCounter, "test_counter")
+		}
+	})
+}
+
+// BenchmarkMemStorageAll измеряет производительность получения всех метрик
+func BenchmarkMemStorageAll(b *testing.B) {
+	benchmarks := []struct {
+		name        string
+		numCounters int
+		numGauges   int
+	}{
+		{"10_metrics", 5, 5},
+		{"100_metrics", 50, 50},
+		{"1000_metrics", 500, 500},
+		{"10000_metrics", 5000, 5000},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			storage := NewMemStorage()
+
+			// Заполняем хранилище
+			for i := 0; i < bm.numCounters; i++ {
+				_ = storage.Counter("counter_"+string(rune(i)), int64(i))
+			}
+			for i := 0; i < bm.numGauges; i++ {
+				_ = storage.ReplaceGaugeMetric("gauge_"+string(rune(i)), float64(i))
+			}
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_, _ = storage.All()
+			}
+		})
+	}
+}
+
+// BenchmarkMemStorageLoad измеряет производительность загрузки метрик
+func BenchmarkMemStorageLoad(b *testing.B) {
+	benchmarks := []struct {
+		name       string
+		numMetrics int
+	}{
+		{"10_metrics", 10},
+		{"100_metrics", 100},
+		{"1000_metrics", 1000},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			// Подготавливаем данные для загрузки
+			metrics := make([]models.Metrics, bm.numMetrics)
+			for i := 0; i < bm.numMetrics/2; i++ {
+				val := int64(i)
+				metrics[i] = models.Metrics{
+					ID:    "counter_" + string(rune(i)),
+					MType: models.Counter,
+					Delta: &val,
+				}
+			}
+			for i := bm.numMetrics / 2; i < bm.numMetrics; i++ {
+				val := float64(i)
+				metrics[i] = models.Metrics{
+					ID:    "gauge_" + string(rune(i)),
+					MType: models.Gauge,
+					Value: &val,
+				}
+			}
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				storage := NewMemStorage()
+				_ = storage.Load(metrics)
+			}
+		})
+	}
+}
+
+// BenchmarkMemStorageMixed_Sequential измеряет смешанные операции (запись/чтение)
+func BenchmarkMemStorageMixed_Sequential(b *testing.B) {
+	storage := NewMemStorage()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// 50% записи, 50% чтения
+		if i%2 == 0 {
+			_ = storage.Counter("counter", 1)
+		} else {
+			_, _ = storage.GetValue(TypeCounter, "counter")
+		}
+	}
+}
+
+// BenchmarkMemStorageMixed_Parallel измеряет конкурентные смешанные операции
+func BenchmarkMemStorageMixed_Parallel(b *testing.B) {
+	storage := NewMemStorage()
+	_ = storage.Counter("counter", 0)
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		i := 0
+		for pb.Next() {
+			// 50% записи, 50% чтения
+			if i%2 == 0 {
+				_ = storage.Counter("counter", 1)
+			} else {
+				_, _ = storage.GetValue(TypeCounter, "counter")
+			}
+			i++
+		}
+	})
+}
+
+// BenchmarkMemStorageContentionHigh измеряет производительность при высокой конкуренции
+// (много горутин обновляют одну и ту же метрику)
+func BenchmarkMemStorageContentionHigh(b *testing.B) {
+	storage := NewMemStorage()
+	_ = storage.Counter("hotspot", 0)
+
+	b.ResetTimer()
+	b.SetParallelism(100) // Высокий уровень параллелизма
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_ = storage.Counter("hotspot", 1)
+		}
+	})
+}
+
+// BenchmarkMemStorageContentionLow измеряет производительность при низкой конкуренции
+// (каждая горутина работает со своей метрикой)
+func BenchmarkMemStorageContentionLow(b *testing.B) {
+	storage := NewMemStorage()
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		goroutineID := 0
+		for pb.Next() {
+			metricName := "counter_goroutine_" + string(rune(goroutineID))
+			_ = storage.Counter(metricName, 1)
+		}
+	})
 }
