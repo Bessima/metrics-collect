@@ -420,3 +420,107 @@ func TestGZIPMiddleware_ContentTypeWithCharset(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "gzip", rec.Header().Get("Content-Encoding"))
 }
+
+// TestGZIPMiddleware_HandlerWithoutExplicitWriteHeader воспроизводит проблему
+// когда handler НЕ вызывает WriteHeader() явно (типичный случай!)
+func TestGZIPMiddleware_HandlerWithoutExplicitWriteHeader(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		// НЕ вызываем w.WriteHeader() - это типичный случай!
+		// Go автоматически вызовет WriteHeader(200) при первом Write()
+		w.Write([]byte(`{"message":"hello world"}`))
+	})
+
+	middleware := GZIPMiddleware(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+	rec := httptest.NewRecorder()
+
+	middleware.ServeHTTP(rec, req)
+
+	// КРИТИЧНО: Должен быть установлен Content-Encoding
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "gzip", rec.Header().Get("Content-Encoding"),
+		"Content-Encoding MUST be set even when handler doesn't call WriteHeader explicitly")
+
+	// КРИТИЧНО: Content-Length должен быть удален
+	assert.Empty(t, rec.Header().Get("Content-Length"),
+		"Content-Length MUST be removed when using gzip")
+
+	// Проверяем, что данные действительно сжаты
+	gr, err := gzip.NewReader(rec.Body)
+	require.NoError(t, err, "Response body should be valid gzip")
+	defer gr.Close()
+
+	decompressed, err := io.ReadAll(gr)
+	require.NoError(t, err)
+	assert.Equal(t, `{"message":"hello world"}`, string(decompressed))
+}
+
+// TestGZIPMiddleware_HTMLResponse проверяет отдачу HTML в браузер
+func TestGZIPMiddleware_HTMLResponse(t *testing.T) {
+	htmlContent := `<!DOCTYPE html>
+<html>
+<head><title>Test</title></head>
+<body><h1>Hello, мир! 🌍</h1></body>
+</html>`
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		// Типичный случай: НЕ вызываем WriteHeader
+		w.Write([]byte(htmlContent))
+	})
+
+	middleware := GZIPMiddleware(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+	rec := httptest.NewRecorder()
+
+	middleware.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "gzip", rec.Header().Get("Content-Encoding"))
+	assert.Empty(t, rec.Header().Get("Content-Length"))
+
+	// Декодируем gzip
+	gr, err := gzip.NewReader(rec.Body)
+	require.NoError(t, err, "HTML should be properly gzipped")
+	defer gr.Close()
+
+	decompressed, err := io.ReadAll(gr)
+	require.NoError(t, err)
+	assert.Equal(t, htmlContent, string(decompressed))
+	assert.Contains(t, string(decompressed), "мир", "UTF-8 должен корректно декодироваться")
+}
+
+// TestGZIPMiddleware_MultipleWrites проверяет несколько вызовов Write()
+func TestGZIPMiddleware_MultipleWrites(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		// Несколько вызовов Write - типичный случай для streaming
+		w.Write([]byte(`{"part1":`))
+		w.Write([]byte(`"value1",`))
+		w.Write([]byte(`"part2":"value2"}`))
+	})
+
+	middleware := GZIPMiddleware(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+	rec := httptest.NewRecorder()
+
+	middleware.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "gzip", rec.Header().Get("Content-Encoding"))
+
+	gr, err := gzip.NewReader(rec.Body)
+	require.NoError(t, err)
+	defer gr.Close()
+
+	decompressed, err := io.ReadAll(gr)
+	require.NoError(t, err)
+	assert.Equal(t, `{"part1":"value1","part2":"value2"}`, string(decompressed))
+}

@@ -7,8 +7,10 @@ import (
 )
 
 type compressWriter struct {
-	w  http.ResponseWriter
-	zw *gzip.Writer
+	w              http.ResponseWriter
+	zw             *gzip.Writer
+	wroteHeader    bool
+	shouldCompress bool
 }
 
 func newCompressWriter(w http.ResponseWriter) *compressWriter {
@@ -23,23 +25,40 @@ func (c *compressWriter) Header() http.Header {
 }
 
 func (c *compressWriter) Write(p []byte) (int, error) {
-	contentType := c.w.Header().Get("Content-Type")
-	if !isAllowCompressContentType(contentType) {
+	if !c.wroteHeader {
+		c.WriteHeader(http.StatusOK)
+	}
+
+	if !c.shouldCompress {
 		return c.w.Write(p)
 	}
+
 	return c.zw.Write(p)
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
-	contentType := c.w.Header().Get("Content-Type")
-	if statusCode < 300 && isAllowCompressContentType(contentType) {
-		c.w.Header().Set("Content-Encoding", "gzip")
+	if c.wroteHeader {
+		return
 	}
+	c.wroteHeader = true
+
+	contentType := c.w.Header().Get("Content-Type")
+	c.shouldCompress = statusCode < 300 && isAllowCompressContentType(contentType)
+
+	if c.shouldCompress {
+		c.w.Header().Set("Content-Encoding", "gzip")
+		// ВАЖНО: Удаляем Content-Length, так как размер изменится
+		c.w.Header().Del("Content-Length")
+	}
+
 	c.w.WriteHeader(statusCode)
 }
 
 func (c *compressWriter) Close() error {
-	return c.zw.Close()
+	if c.shouldCompress && c.zw != nil {
+		return c.zw.Close()
+	}
+	return nil
 }
 
 type compressReader struct {
