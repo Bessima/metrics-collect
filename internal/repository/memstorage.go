@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"sync"
@@ -73,14 +72,14 @@ func (ms *MemStorage) GetValue(typeMetric TypeMetric, name string) (value interf
 			value = *elem.Delta
 			return
 		}
-		err = errors.New("metric not found")
+		err = ErrMetricNotFound
 
 	case typeMetric == TypeGauge:
 		if elem, exists := ms.gauge[name]; exists {
 			value = *elem.Value
 			return
 		}
-		err = errors.New("metric not found")
+		err = ErrMetricNotFound
 	default:
 		err = fmt.Errorf("unknown metric type: %s", typeMetric)
 	}
@@ -105,8 +104,7 @@ func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (models.Metr
 		return models.Metrics{}, err
 	}
 
-	err := errors.New("metric not found")
-	return models.Metrics{}, err
+	return models.Metrics{}, ErrMetricNotFound
 }
 
 func (ms *MemStorage) All() ([]models.Metrics, error) {
@@ -138,8 +136,7 @@ func (ms *MemStorage) Load(metrics []models.Metrics) error {
 }
 
 func (ms *MemStorage) Ping(ctx context.Context) error {
-	err := errors.New("current command only for DB. Server is working with memory storage now")
-	return err
+	return ErrNotSupportedForMemStorage
 }
 
 func (ms *MemStorage) Close() error {

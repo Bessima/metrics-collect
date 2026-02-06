@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/Bessima/metrics-collect/internal/config/db"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
@@ -39,7 +38,7 @@ func (repository *DBRepository) Counter(name string, value int64) error {
 			return err
 		}
 		if result.RowsAffected() == 0 {
-			return errors.New("counter metric is not changed")
+			return ErrCounterNotChanged
 		}
 		return nil
 	})
@@ -54,7 +53,7 @@ func (repository *DBRepository) ReplaceGaugeMetric(name string, value float64) e
 			return err
 		}
 		if result.RowsAffected() == 0 {
-			return errors.New("gauge metric is not changed")
+			return ErrGaugeNotChanged
 		}
 		return nil
 	})
