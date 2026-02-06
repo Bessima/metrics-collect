@@ -3,10 +3,11 @@ package hash
 import (
 	"bytes"
 	"crypto/hmac"
-	"github.com/Bessima/metrics-collect/internal/common"
-	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"io"
 	"net/http"
+
+	"github.com/Bessima/metrics-collect/internal/common"
+	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 )
 
 type HashResponseWriter struct {

@@ -1,9 +1,10 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
-	"net/http"
 )
 
 func PingHandler(storage repository.StorageRepositoryI) http.HandlerFunc {

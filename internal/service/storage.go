@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+
 	"github.com/Bessima/metrics-collect/internal/config"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"

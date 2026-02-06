@@ -3,8 +3,9 @@ package repository
 import (
 	"context"
 	"fmt"
-	models "github.com/Bessima/metrics-collect/internal/model"
 	"sync"
+
+	models "github.com/Bessima/metrics-collect/internal/model"
 )
 
 type TypeMetric string

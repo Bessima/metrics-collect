@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+
 	"github.com/Bessima/metrics-collect/internal/config/db"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	models "github.com/Bessima/metrics-collect/internal/model"

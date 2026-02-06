@@ -2,6 +2,10 @@ package service
 
 import (
 	"context"
+	"net"
+	"net/http"
+	"time"
+
 	"github.com/Bessima/metrics-collect/internal/handler"
 	"github.com/Bessima/metrics-collect/internal/middlewares/compress"
 	hashMiddleware "github.com/Bessima/metrics-collect/internal/middlewares/hash"
@@ -9,9 +13,6 @@ import (
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/Bessima/metrics-collect/pkg/audit"
 	"github.com/go-chi/chi/v5"
-	"net"
-	"net/http"
-	"time"
 )
 
 type ServerService struct {

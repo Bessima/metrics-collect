@@ -2,13 +2,14 @@ package agent
 
 import (
 	"fmt"
+	"log"
+	"math/rand"
+	"runtime"
+
 	"github.com/Bessima/metrics-collect/internal/common"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/shirou/gopsutil/v4/mem"
-	"log"
-	"math/rand"
-	"runtime"
 )
 
 const CounterPollCountMetric = "PollCount"

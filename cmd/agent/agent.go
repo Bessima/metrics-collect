@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/Bessima/metrics-collect/internal/agent"
-	"github.com/Bessima/metrics-collect/internal/common"
-	models "github.com/Bessima/metrics-collect/internal/model"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/Bessima/metrics-collect/internal/agent"
+	"github.com/Bessima/metrics-collect/internal/common"
+	models "github.com/Bessima/metrics-collect/internal/model"
 )
 
 type Agent struct {

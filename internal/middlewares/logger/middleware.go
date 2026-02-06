@@ -1,9 +1,10 @@
 package logger
 
 import (
-	"go.uber.org/zap"
 	"net/http"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func RequestLogger(handler http.Handler) http.Handler {

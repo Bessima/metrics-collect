@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
-	"github.com/Bessima/metrics-collect/internal/retry"
-	"go.uber.org/zap"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
+	"github.com/Bessima/metrics-collect/internal/retry"
+	"go.uber.org/zap"
 )
 
 type Observer interface {

@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"go.uber.org/zap"
-	"os"
 )
 
 type MetricsFromFile struct {

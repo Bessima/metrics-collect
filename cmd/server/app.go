@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
+	"time"
+
 	configApp "github.com/Bessima/metrics-collect/internal/config"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"go.uber.org/zap"
-	"time"
 )
 
 type App struct {

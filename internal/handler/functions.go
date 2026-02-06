@@ -2,9 +2,10 @@ package handler
 
 import (
 	"fmt"
+	"log"
+
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"github.com/Bessima/metrics-collect/internal/repository"
-	"log"
 )
 
 func updateMetricInStorage(storage repository.StorageRepositoryI, metric models.Metrics) error {

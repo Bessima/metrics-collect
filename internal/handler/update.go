@@ -3,10 +3,11 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"github.com/Bessima/metrics-collect/internal/repository"
-	"net/http"
 )
 
 func UpdateHandler(storage repository.StorageRepositoryI, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {

@@ -1,10 +1,11 @@
 package handler
 
 import (
-	models "github.com/Bessima/metrics-collect/internal/model"
-	"github.com/Bessima/metrics-collect/internal/repository"
 	"html/template"
 	"net/http"
+
+	models "github.com/Bessima/metrics-collect/internal/model"
+	"github.com/Bessima/metrics-collect/internal/repository"
 )
 
 type MetricsData struct {

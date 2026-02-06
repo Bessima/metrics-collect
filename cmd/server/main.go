@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
+	"os/signal"
+	"syscall"
+
 	"github.com/Bessima/metrics-collect/internal/config"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/Bessima/metrics-collect/internal/service"
 	"github.com/Bessima/metrics-collect/pkg/audit"
 	"go.uber.org/zap"
-	"os/signal"
-	"syscall"
 )
 
 func main() {

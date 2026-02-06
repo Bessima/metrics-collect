@@ -1,8 +1,9 @@
 package agent
 
 import (
-	models "github.com/Bessima/metrics-collect/internal/model"
 	"testing"
+
+	models "github.com/Bessima/metrics-collect/internal/model"
 )
 
 func BenchmarkAddBaseMetricsAddBaseMetrics(b *testing.B) {

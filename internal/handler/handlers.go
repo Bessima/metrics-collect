@@ -1,14 +1,15 @@
 package handler
 
 import (
-	"github.com/Bessima/metrics-collect/internal/common"
-	"github.com/Bessima/metrics-collect/internal/model"
-	"github.com/Bessima/metrics-collect/internal/repository"
-	"github.com/go-chi/chi/v5"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/Bessima/metrics-collect/internal/common"
+	models "github.com/Bessima/metrics-collect/internal/model"
+	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/go-chi/chi/v5"
 )
 
 func SetMetricHandler(storage repository.StorageRepositoryI, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {

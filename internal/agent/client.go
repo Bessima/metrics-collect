@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Bessima/metrics-collect/internal/common"
-	models "github.com/Bessima/metrics-collect/internal/model"
-	"github.com/Bessima/metrics-collect/internal/repository"
-	"github.com/Bessima/metrics-collect/internal/retry"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/Bessima/metrics-collect/internal/common"
+	models "github.com/Bessima/metrics-collect/internal/model"
+	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/Bessima/metrics-collect/internal/retry"
 )
 
 type Client struct {
