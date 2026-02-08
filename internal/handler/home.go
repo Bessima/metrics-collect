@@ -13,7 +13,8 @@ type MetricsData struct {
 	Metrics []models.Metrics
 }
 
-func MainHandler(storage repository.StorageRepositoryI, templates *template.Template) http.HandlerFunc {
+// MainHandler основная страница, показывающая список доступных метрик
+func MainHandler(storage repository.StorageRepositorier, templates *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		metrics, err := storage.All()
 		if err != nil {

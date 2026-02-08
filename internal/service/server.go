@@ -17,11 +17,11 @@ import (
 
 type ServerService struct {
 	Server  *http.Server
-	storage repository.StorageRepositoryI
+	storage repository.StorageRepositorier
 	hashKey string
 }
 
-func NewServerService(rootContext context.Context, address string, hashKey string, storage repository.StorageRepositoryI) ServerService {
+func NewServerService(rootContext context.Context, address string, hashKey string, storage repository.StorageRepositorier) ServerService {
 	server := &http.Server{
 		Addr: address,
 		BaseContext: func(_ net.Listener) context.Context {

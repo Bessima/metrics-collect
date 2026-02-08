@@ -1,3 +1,4 @@
+// Package handler Модуль handler предназначен для хранения основных обработчиков для эндпоинтов
 package handler
 
 import (
@@ -8,7 +9,7 @@ import (
 	"github.com/Bessima/metrics-collect/internal/repository"
 )
 
-func updateMetricInStorage(storage repository.StorageRepositoryI, metric models.Metrics) error {
+func updateMetricInStorage(storage repository.StorageRepositorier, metric models.Metrics) error {
 	switch repository.TypeMetric(metric.MType) {
 	case repository.TypeCounter:
 		if metric.Delta == nil {

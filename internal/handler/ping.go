@@ -7,7 +7,7 @@ import (
 	"github.com/Bessima/metrics-collect/internal/repository"
 )
 
-func PingHandler(storage repository.StorageRepositoryI) http.HandlerFunc {
+func PingHandler(storage repository.StorageRepositorier) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		if err := storage.Ping(request.Context()); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

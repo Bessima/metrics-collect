@@ -10,7 +10,8 @@ import (
 	"github.com/Bessima/metrics-collect/pkg/audit"
 )
 
-func UpdatesHandler(storage repository.StorageRepositoryI, metricsFromFile *repository.MetricsFromFile, auditEvent *audit.Event) http.HandlerFunc {
+// UpdatesHandler обновляет или сохраняет метрики, переданные через json-параметры
+func UpdatesHandler(storage repository.StorageRepositorier, metricsFromFile *repository.MetricsFromFile, auditEvent *audit.Event) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var metrics []models.Metrics
 		var buf bytes.Buffer

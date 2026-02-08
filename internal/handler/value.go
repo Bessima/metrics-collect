@@ -10,7 +10,8 @@ import (
 	"github.com/Bessima/metrics-collect/internal/repository"
 )
 
-func ValueHandler(storage repository.StorageRepositoryI) http.HandlerFunc {
+// ValueHandler позваляет просматривать значение метрики, тип и имя которой передано через json параметры
+func ValueHandler(storage repository.StorageRepositorier) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		var requestMetric models.RequestValueMetric
 

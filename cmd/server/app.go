@@ -12,12 +12,12 @@ import (
 
 type App struct {
 	config            *configApp.Config
-	storageRepository repository.StorageRepositoryI
+	storageRepository repository.StorageRepositorier
 	metricsFromFile   *repository.MetricsFromFile
 	rootContext       context.Context
 }
 
-func NewApp(ctx context.Context, config *configApp.Config, storage repository.StorageRepositoryI) *App {
+func NewApp(ctx context.Context, config *configApp.Config, storage repository.StorageRepositorier) *App {
 	app := &App{rootContext: ctx, config: config, storageRepository: storage}
 
 	app.metricsFromFile = repository.NewMetricsFromFile(app.config.FileStoragePath)
