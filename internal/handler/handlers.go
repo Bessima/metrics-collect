@@ -1,17 +1,19 @@
 package handler
 
 import (
-	"github.com/Bessima/metrics-collect/internal/common"
-	"github.com/Bessima/metrics-collect/internal/model"
-	"github.com/Bessima/metrics-collect/internal/repository"
-	"github.com/go-chi/chi/v5"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/Bessima/metrics-collect/internal/common"
+	models "github.com/Bessima/metrics-collect/internal/model"
+	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/go-chi/chi/v5"
 )
 
-func SetMetricHandler(storage repository.StorageRepositoryI, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {
+// SetMetricHandler устанавливает значение метрики, параметры который переданы в url запроса(тип, имя, значение)
+func SetMetricHandler(storage repository.StorageRepositorier, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		typeMetric := chi.URLParam(request, "typeMetric")
 		metric := chi.URLParam(request, "name")
@@ -66,7 +68,8 @@ func SetMetricHandler(storage repository.StorageRepositoryI, metricsFromFile *re
 	}
 }
 
-func ViewMetricValue(storage repository.StorageRepositoryI) http.HandlerFunc {
+// ViewMetricValue позваляет просматривать значение метрики, тип и имя которой передано через параметры url
+func ViewMetricValue(storage repository.StorageRepositorier) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		typeMetric := repository.TypeMetric(chi.URLParam(request, "typeMetric"))
 		metric := chi.URLParam(request, "name")

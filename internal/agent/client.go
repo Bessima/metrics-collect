@@ -6,13 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	models "github.com/Bessima/metrics-collect/internal/model"
-	"github.com/Bessima/metrics-collect/internal/repository"
-	"github.com/Bessima/metrics-collect/internal/retry"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/Bessima/metrics-collect/internal/common"
+	models "github.com/Bessima/metrics-collect/internal/model"
+	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/Bessima/metrics-collect/internal/retry"
 )
 
 type Client struct {
@@ -44,7 +46,7 @@ func (client *Client) SendMetric(typeMetric string, name string, value string) e
 	return nil
 }
 
-func (client *Client) SendData(data *bytes.Buffer) error {
+func (client *Client) SendData(data *bytes.Buffer, hash string) error {
 	postURL := fmt.Sprintf("%s/updates/", client.Domain)
 
 	return retry.DoRetry(context.Background(), func() error {
@@ -54,6 +56,10 @@ func (client *Client) SendData(data *bytes.Buffer) error {
 		}
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Add("Content-Encoding", "gzip")
+
+		if hash != "" {
+			req.Header.Add(common.HashHeader, hash)
+		}
 
 		var response *http.Response
 

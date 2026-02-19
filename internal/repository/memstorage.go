@@ -2,10 +2,10 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	models "github.com/Bessima/metrics-collect/internal/model"
 	"sync"
+
+	models "github.com/Bessima/metrics-collect/internal/model"
 )
 
 type TypeMetric string
@@ -29,55 +29,58 @@ func NewMemStorage() *MemStorage {
 }
 
 func (ms *MemStorage) Counter(name string, value int64) error {
+	ms.mutex.Lock()
+	defer ms.mutex.Unlock()
 
 	if elem, exists := ms.counters[name]; exists {
-		ms.mutex.Lock()
-		defer ms.mutex.Unlock()
 		*elem.Delta = *elem.Delta + value
-		return nil
-	}
-	ms.counters[name] = models.Metrics{
-		ID:    name,
-		MType: models.Counter,
-		Delta: &value,
-		Value: nil,
-		Hash:  "",
+	} else {
+		ms.counters[name] = models.Metrics{
+			ID:    name,
+			MType: models.Counter,
+			Delta: &value,
+			Value: nil,
+			Hash:  "",
+		}
 	}
 	return nil
 }
 
 func (ms *MemStorage) ReplaceGaugeMetric(name string, value float64) error {
-	if elem, exists := ms.gauge[name]; exists {
-		ms.mutex.Lock()
-		defer ms.mutex.Unlock()
-		*elem.Value = value
-		return nil
-	}
+	ms.mutex.Lock()
+	defer ms.mutex.Unlock()
 
-	ms.gauge[name] = models.Metrics{
-		ID:    name,
-		MType: models.Gauge,
-		Value: &value,
-		Delta: nil,
+	if elem, exists := ms.gauge[name]; exists {
+		*elem.Value = value
+	} else {
+		ms.gauge[name] = models.Metrics{
+			ID:    name,
+			MType: models.Gauge,
+			Value: &value,
+			Delta: nil,
+		}
 	}
 	return nil
 }
 
 func (ms *MemStorage) GetValue(typeMetric TypeMetric, name string) (value interface{}, err error) {
+	ms.mutex.RLock()
+	defer ms.mutex.RUnlock()
+
 	switch {
 	case typeMetric == TypeCounter:
 		if elem, exists := ms.counters[name]; exists {
 			value = *elem.Delta
 			return
 		}
-		err = errors.New("metric not found")
+		err = ErrMetricNotFound
 
 	case typeMetric == TypeGauge:
 		if elem, exists := ms.gauge[name]; exists {
 			value = *elem.Value
 			return
 		}
-		err = errors.New("metric not found")
+		err = ErrMetricNotFound
 	default:
 		err = fmt.Errorf("unknown metric type: %s", typeMetric)
 	}
@@ -85,6 +88,9 @@ func (ms *MemStorage) GetValue(typeMetric TypeMetric, name string) (value interf
 }
 
 func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (models.Metrics, error) {
+	ms.mutex.RLock()
+	defer ms.mutex.RUnlock()
+
 	switch {
 	case typeMetric == TypeCounter:
 		if elem, exists := ms.counters[name]; exists {
@@ -99,11 +105,13 @@ func (ms *MemStorage) GetMetric(typeMetric TypeMetric, name string) (models.Metr
 		return models.Metrics{}, err
 	}
 
-	err := errors.New("metric not found")
-	return models.Metrics{}, err
+	return models.Metrics{}, ErrMetricNotFound
 }
 
 func (ms *MemStorage) All() ([]models.Metrics, error) {
+	ms.mutex.RLock()
+	defer ms.mutex.RUnlock()
+
 	metrics := make([]models.Metrics, 0, len(ms.counters)+len(ms.gauge))
 
 	for _, item := range ms.counters {
@@ -129,8 +137,7 @@ func (ms *MemStorage) Load(metrics []models.Metrics) error {
 }
 
 func (ms *MemStorage) Ping(ctx context.Context) error {
-	err := errors.New("current command only for DB. Server is working with memory storage now")
-	return err
+	return ErrNotSupportedForMemStorage
 }
 
 func (ms *MemStorage) Close() error {

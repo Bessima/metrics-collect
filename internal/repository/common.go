@@ -2,12 +2,14 @@ package repository
 
 import (
 	"context"
+
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"go.uber.org/zap"
 )
 
-type StorageRepositoryI interface {
+// StorageRepositorier основной интерфейс для работы с разными типами хранилищей
+type StorageRepositorier interface {
 	Counter(name string, value int64) error
 	ReplaceGaugeMetric(name string, value float64) error
 	GetValue(typeMetric TypeMetric, name string) (interface{}, error)
@@ -18,7 +20,7 @@ type StorageRepositoryI interface {
 	Ping(ctx context.Context) error
 }
 
-func UpdateMetricInFile(storage StorageRepositoryI, metricsFromFile *MetricsFromFile) {
+func UpdateMetricInFile(storage StorageRepositorier, metricsFromFile *MetricsFromFile) {
 	if metricsFromFile == nil {
 		return
 	}

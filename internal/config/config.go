@@ -1,3 +1,4 @@
+// Модуль config предназначен для настроек конфигураций сервера
 package config
 
 import (
@@ -6,13 +7,25 @@ import (
 	"go.uber.org/zap"
 )
 
+// Config хранит основные пареметры для запуска сервера
 type Config struct {
+	// Address адрес и порт для запуска сервера
 	Address string `env:"ADDRESS"`
 
-	StoreInterval   int64  `env:"STORE_INTERVAL"`
+	// StoreInterval интервал записи в хранилище
+	StoreInterval int64 `env:"STORE_INTERVAL"`
+	// FileStoragePath путь для сохранения данных
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
-	Restore         bool   `env:"RESTORE"`
-	DatabaseDNS     string `env:"DATABASE_DSN"`
+	// Restore перезапись
+	Restore bool `env:"RESTORE"`
+	// DatabaseDNS Адрес доступа к БД
+	DatabaseDNS string `env:"DATABASE_DSN"`
+	// KeyHash Хэш-ключ
+	KeyHash string `env:"KEY"`
+	//AuditFile путь для сохранения аудит данных в файл
+	AuditFile string `env:"AUDIT_FILE"`
+	//AuditURL аддрес сервера для сохранения аудит данных в файл
+	AuditURL string `env:"AUDIT_URL"`
 }
 
 func InitConfig() *Config {
@@ -25,6 +38,9 @@ func InitConfig() *Config {
 		FileStoragePath: flags.fileStoragePath,
 		Restore:         flags.restore,
 		DatabaseDNS:     flags.dbDNS,
+		KeyHash:         flags.keyHash,
+		AuditFile:       flags.auditFile,
+		AuditURL:        flags.auditURL,
 	}
 	cfg.parseEnv()
 

@@ -3,13 +3,15 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"github.com/Bessima/metrics-collect/internal/repository"
-	"net/http"
 )
 
-func UpdateHandler(storage repository.StorageRepositoryI, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {
+// UpdateHandler обновляет или сохраняет одну метрику, переданную через json-параметры
+func UpdateHandler(storage repository.StorageRepositorier, metricsFromFile *repository.MetricsFromFile) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var metric models.Metrics
 		var buf bytes.Buffer

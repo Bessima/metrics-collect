@@ -3,12 +3,12 @@ package repository
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"os"
+
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	models "github.com/Bessima/metrics-collect/internal/model"
 	"go.uber.org/zap"
-	"os"
 )
 
 type MetricsFromFile struct {
@@ -133,7 +133,7 @@ func (repository *FileStorageRepository) GetValue(typeMetric TypeMetric, name st
 	case TypeGauge:
 		return metric.Value, err
 	default:
-		err = errors.New("unknown metric type")
+		err = ErrUnknownMetricType
 	}
 
 	return nil, err
@@ -194,8 +194,7 @@ func (repository *FileStorageRepository) All() ([]models.Metrics, error) {
 }
 
 func (repository *FileStorageRepository) Ping(ctx context.Context) error {
-	err := errors.New("current command only for DB. Server is working with file storage now")
-	return err
+	return ErrNotSupportedForFileStorage
 }
 
 func (repository *FileStorageRepository) Close() error {

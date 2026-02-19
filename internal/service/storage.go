@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+
 	"github.com/Bessima/metrics-collect/internal/config"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
@@ -11,7 +12,7 @@ import (
 type StorageService struct {
 	config *config.Config
 
-	repository repository.StorageRepositoryI
+	repository repository.StorageRepositorier
 }
 
 func NewStorageService(ctx context.Context, configuration *config.Config) *StorageService {
@@ -37,7 +38,7 @@ func (service *StorageService) setRepository(ctx context.Context) {
 	logger.Log.Info("Working with MemStorage")
 }
 
-func (service *StorageService) GetRepository() *repository.StorageRepositoryI {
+func (service *StorageService) GetRepository() *repository.StorageRepositorier {
 	return &service.repository
 }
 

@@ -1,12 +1,13 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
-	"net/http"
 )
 
-func PingHandler(storage repository.StorageRepositoryI) http.HandlerFunc {
+func PingHandler(storage repository.StorageRepositorier) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		if err := storage.Ping(request.Context()); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

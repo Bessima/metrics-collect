@@ -1,10 +1,11 @@
 package handler
 
 import (
-	models "github.com/Bessima/metrics-collect/internal/model"
-	"github.com/Bessima/metrics-collect/internal/repository"
 	"html/template"
 	"net/http"
+
+	models "github.com/Bessima/metrics-collect/internal/model"
+	"github.com/Bessima/metrics-collect/internal/repository"
 )
 
 type MetricsData struct {
@@ -12,7 +13,8 @@ type MetricsData struct {
 	Metrics []models.Metrics
 }
 
-func MainHandler(storage repository.StorageRepositoryI, templates *template.Template) http.HandlerFunc {
+// MainHandler основная страница, показывающая список доступных метрик
+func MainHandler(storage repository.StorageRepositorier, templates *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		metrics, err := storage.All()
 		if err != nil {
@@ -25,9 +27,12 @@ func MainHandler(storage repository.StorageRepositoryI, templates *template.Temp
 		}
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		err = templates.ExecuteTemplate(w, "index.html", data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if templates != nil {
+			err = templates.ExecuteTemplate(w, "index.html", data)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 		}
+
 	}
 }

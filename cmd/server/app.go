@@ -2,21 +2,22 @@ package main
 
 import (
 	"context"
+	"time"
+
 	configApp "github.com/Bessima/metrics-collect/internal/config"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"go.uber.org/zap"
-	"time"
 )
 
 type App struct {
 	config            *configApp.Config
-	storageRepository repository.StorageRepositoryI
+	storageRepository repository.StorageRepositorier
 	metricsFromFile   *repository.MetricsFromFile
 	rootContext       context.Context
 }
 
-func NewApp(ctx context.Context, config *configApp.Config, storage repository.StorageRepositoryI) *App {
+func NewApp(ctx context.Context, config *configApp.Config, storage repository.StorageRepositorier) *App {
 	app := &App{rootContext: ctx, config: config, storageRepository: storage}
 
 	app.metricsFromFile = repository.NewMetricsFromFile(app.config.FileStoragePath)

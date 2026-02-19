@@ -2,48 +2,53 @@ package service
 
 import (
 	"context"
-	"github.com/Bessima/metrics-collect/internal/handler"
-	"github.com/Bessima/metrics-collect/internal/middlewares/compress"
-	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
-	"github.com/Bessima/metrics-collect/internal/repository"
-	"github.com/go-chi/chi/v5"
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/Bessima/metrics-collect/internal/handler"
+	"github.com/Bessima/metrics-collect/internal/middlewares/compress"
+	hashMiddleware "github.com/Bessima/metrics-collect/internal/middlewares/hash"
+	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
+	"github.com/Bessima/metrics-collect/internal/repository"
+	"github.com/Bessima/metrics-collect/pkg/audit"
+	"github.com/go-chi/chi/v5"
 )
 
 type ServerService struct {
 	Server  *http.Server
-	storage repository.StorageRepositoryI
+	storage repository.StorageRepositorier
+	hashKey string
 }
 
-func NewServerService(rootContext context.Context, address string, storage repository.StorageRepositoryI) ServerService {
+func NewServerService(rootContext context.Context, address string, hashKey string, storage repository.StorageRepositorier) ServerService {
 	server := &http.Server{
 		Addr: address,
 		BaseContext: func(_ net.Listener) context.Context {
 			return rootContext
 		},
 	}
-	return ServerService{Server: server, storage: storage}
+	return ServerService{Server: server, storage: storage, hashKey: hashKey}
 }
 
-func (serverService *ServerService) SetRouter(storeInterval int64, metricsFromFile *repository.MetricsFromFile) {
+func (serverService *ServerService) SetRouter(storeInterval int64, metricsFromFile *repository.MetricsFromFile, auditEvent *audit.Event) {
 	var router chi.Router
 
 	if storeInterval == 0 {
-		router = serverService.getRouter(metricsFromFile)
+		router = serverService.getRouter(metricsFromFile, auditEvent)
 	} else {
-		router = serverService.getRouter(nil)
+		router = serverService.getRouter(nil, auditEvent)
 	}
 
 	serverService.Server.Handler = router
 }
 
-func (serverService *ServerService) getRouter(metricsFromFile *repository.MetricsFromFile) chi.Router {
+func (serverService *ServerService) getRouter(metricsFromFile *repository.MetricsFromFile, auditEvent *audit.Event) chi.Router {
 	router := chi.NewRouter()
 
 	router.Use(logger.RequestLogger)
 	router.Use(compress.GZIPMiddleware)
+	router.Use(hashMiddleware.HashCheckerMiddleware(serverService.hashKey))
 
 	templates := handler.ParseAllTemplates()
 	router.Get("/", handler.MainHandler(serverService.storage, templates))
@@ -54,7 +59,7 @@ func (serverService *ServerService) getRouter(metricsFromFile *repository.Metric
 	router.Post("/update/", handler.UpdateHandler(serverService.storage, metricsFromFile))
 	router.Post("/value/", handler.ValueHandler(serverService.storage))
 
-	router.Post("/updates/", handler.UpdatesHandler(serverService.storage, metricsFromFile))
+	router.Post("/updates/", handler.UpdatesHandler(serverService.storage, metricsFromFile, auditEvent))
 
 	router.Get("/ping", handler.PingHandler(serverService.storage))
 

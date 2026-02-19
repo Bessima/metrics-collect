@@ -10,7 +10,7 @@ var compressContentTypes = []string{"application/json", "text/html"}
 
 func isAllowCompressContentType(contentType string) bool {
 	for _, item := range compressContentTypes {
-		if item == contentType {
+		if strings.HasPrefix(contentType, item) {
 			return true
 		}
 	}
