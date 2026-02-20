@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -96,7 +95,7 @@ func (observer *URLSubscriber) notify(metrics []string, ip string, ts int) error
 	return retry.DoRetry(context.Background(), func() error {
 		req, err := http.NewRequest(http.MethodPost, observer.url, bytes.NewBuffer(data))
 		if err != nil {
-			log.Fatalf("Error creating request: %v", err)
+			logger.Log.Error("Error creating request", zap.Error(err))
 		}
 		req.Header.Add("Content-Type", "application/json")
 

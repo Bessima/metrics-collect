@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
+	"go.uber.org/zap"
 	"io"
 	"log"
 	"net/http"
@@ -52,7 +54,7 @@ func (client *Client) SendData(data *bytes.Buffer, hash string) error {
 	return retry.DoRetry(context.Background(), func() error {
 		req, err := http.NewRequest(http.MethodPost, postURL, data)
 		if err != nil {
-			log.Fatalf("Error creating request: %v", err)
+			logger.Log.Error("Error creating request", zap.Error(err))
 		}
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Add("Content-Encoding", "gzip")
