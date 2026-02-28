@@ -1,5 +1,5 @@
 // Code generator that scans Go packages for structs annotated with
-// // generate:reset and emits a Reset() method for each into reset.gen.go.
+// // generate:reset and emits a Reset() method for each into special generated file.
 package main
 
 import (
@@ -16,6 +16,7 @@ import (
 )
 
 const markerText = "generate:reset"
+const generateFile = "reset.gen.go"
 
 func main() {
 	root := "."
@@ -60,7 +61,7 @@ func main() {
 	}
 }
 
-// cleanGeneratedFiles removes all reset.gen.go files under root.
+// cleanGeneratedFiles removes all generated files under root.
 func cleanGeneratedFiles(root string) {
 	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -73,7 +74,7 @@ func cleanGeneratedFiles(root string) {
 			}
 			return nil
 		}
-		if filepath.Base(path) == "reset.gen.go" {
+		if filepath.Base(path) == generateFile {
 			_ = os.Remove(path)
 		}
 		return nil
@@ -86,7 +87,7 @@ type structEntry struct {
 	body string
 }
 
-// processPkg finds annotated structs in pkg and writes reset.gen.go.
+// processPkg finds annotated structs in pkg and writes generated file
 func processPkg(pkg *packages.Package) error {
 	var entries []structEntry
 
@@ -159,7 +160,7 @@ func processPkg(pkg *packages.Package) error {
 		return fmt.Errorf("format source: %w\n--- generated ---\n%s", err, sb.String())
 	}
 
-	outPath := filepath.Join(dir, "reset.gen.go")
+	outPath := filepath.Join(dir, generateFile)
 	if err := os.WriteFile(outPath, formatted, 0644); err != nil {
 		return fmt.Errorf("write %s: %w", outPath, err)
 	}
