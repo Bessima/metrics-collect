@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os/signal"
 	"syscall"
@@ -14,7 +15,17 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+	buildCommit  string = "N/A"
+)
+
 func main() {
+	fmt.Println("Build version: " + buildVersion)
+	fmt.Println("Build date: " + buildDate)
+	fmt.Println("Build commit: " + buildCommit)
+
 	err := initLogger()
 	if err != nil {
 		logger.Log.Warn(err.Error())
