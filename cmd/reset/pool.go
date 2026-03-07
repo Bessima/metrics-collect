@@ -6,10 +6,11 @@ type Item[T any] interface {
 
 type Pool struct {
 	items []Item[any]
+	New   func() Item[any]
 }
 
-func New() *Pool {
-	return &Pool{items: make([]Item[any], 0)}
+func NewPool(newFunc func() Item[any]) *Pool {
+	return &Pool{items: make([]Item[any], 0), New: newFunc}
 }
 
 func (p *Pool) Get() Item[any] {
@@ -19,6 +20,10 @@ func (p *Pool) Get() Item[any] {
 		p.items = p.items[:newLength]
 		return elem
 	}
+	if p.New != nil {
+		return p.New()
+	}
+
 	return nil
 }
 

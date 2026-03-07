@@ -2,6 +2,7 @@ package errcheckanalyzer
 
 import (
 	"go/ast"
+	"go/types"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -17,18 +18,7 @@ var CriticErrorAnalyzer = &analysis.Analyzer{
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
-		// Сначала находим функцию main, если она есть в пакете main
-		var mainFunc *ast.FuncDecl
-		if pass.Pkg.Name() == "main" {
-			for _, decl := range file.Decls {
-				if fn, ok := decl.(*ast.FuncDecl); ok {
-					if fn.Name.Name == "main" {
-						mainFunc = fn
-						break
-					}
-				}
-			}
-		}
+		mainFunc := findMainFunc(pass, file)
 
 		// Обходим AST и проверяем вызовы функций
 		ast.Inspect(file, func(node ast.Node) bool {
@@ -39,6 +29,23 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		})
 	}
 	return nil, nil
+}
+
+// findMainFunc возвращает объявление функции main в пакете main, иначе nil.
+func findMainFunc(pass *analysis.Pass, file *ast.File) *ast.FuncDecl {
+	if pass.Pkg.Name() != "main" {
+		return nil
+	}
+	for _, decl := range file.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok {
+			continue
+		}
+		if fn.Name.Name == "main" {
+			return fn
+		}
+	}
+	return nil
 }
 
 // checkCriticalCalls проверяет вызовы критических функций
@@ -58,23 +65,31 @@ func checkCriticalCalls(pass *analysis.Pass, call *ast.CallExpr, mainFunc *ast.F
 	}
 
 	// Проверяем log.Fatal* и os.Exit
-	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
-		if x, ok := sel.X.(*ast.Ident); ok {
-			// Проверяем log.Fatal, log.Fatalf, log.Fatalln
-			if x.Name == "log" && strings.HasPrefix(sel.Sel.Name, "Fatal") {
-				if !isMainFunc {
-					pass.Reportf(call.Pos(), "log.Fatal call outside main.main")
-				}
-				return
-			}
+	sel, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return
+	}
+	x, ok := sel.X.(*ast.Ident)
+	if !ok {
+		return
+	}
 
-			// Проверяем os.Exit
-			if x.Name == "os" && sel.Sel.Name == "Exit" {
-				if !isMainFunc {
-					pass.Reportf(call.Pos(), "os.Exit call outside main.main")
-				}
-				return
-			}
+	pkgName, ok := pass.TypesInfo.Uses[x].(*types.PkgName)
+	if !ok {
+		return
+	}
+
+	importPath := pkgName.Imported().Path()
+	funcName := sel.Sel.Name
+
+	switch {
+	case importPath == "log" && strings.HasPrefix(funcName, "Fatal"):
+		if !isMainFunc {
+			pass.Reportf(call.Pos(), "log.Fatal call outside main.main")
+		}
+	case importPath == "os" && funcName == "Exit":
+		if !isMainFunc {
+			pass.Reportf(call.Pos(), "os.Exit call outside main.main")
 		}
 	}
 }
