@@ -1,0 +1,346 @@
+// Code generator that scans Go packages for structs annotated with
+// // generate:reset and emits a Reset() method for each into special generated file.
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
+	"go.uber.org/zap"
+	"go/ast"
+	"go/format"
+	"go/token"
+	"go/types"
+	"golang.org/x/tools/go/packages"
+	"os"
+	"path/filepath"
+	"strings"
+	"text/template"
+)
+
+const markerText = "generate:reset"
+const generateFile = "reset.gen.go"
+
+type templateEnum struct {
+	Package string
+	Entries []structEntry
+}
+
+// structEntry holds the generated body of one Reset() method.
+type structEntry struct {
+	Name string
+	Body string
+}
+
+func main() {
+	root := "."
+	if len(os.Args) > 1 {
+		root = os.Args[1]
+	}
+
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		logger.Log.Error(fmt.Sprintf("abs(%s): %v\n", root, err))
+		os.Exit(1)
+	}
+
+	// Remove stale generated files so they don't cause type-checking errors.
+	cleanGeneratedFiles(absRoot)
+
+	cfg := &packages.Config{
+		Mode: packages.NeedName |
+			packages.NeedFiles |
+			packages.NeedSyntax |
+			packages.NeedTypes |
+			packages.NeedTypesInfo,
+		Dir: absRoot,
+	}
+
+	pkgs, err := packages.Load(cfg, "./...")
+	if err != nil {
+		logger.Log.Error(fmt.Sprintf("load packages: %v\n", err))
+		os.Exit(1)
+	}
+
+	for _, pkg := range pkgs {
+		if len(pkg.Errors) > 0 {
+			for _, e := range pkg.Errors {
+				logger.Log.Error(fmt.Sprintf("package %s: %v\n", pkg.Name, e))
+			}
+			continue
+		}
+		if err := processPkg(pkg); err != nil {
+			logger.Log.Error(fmt.Sprintf("process %s: %v\n", pkg.Name, err))
+		}
+	}
+}
+
+// cleanGeneratedFiles removes all generated files under root.
+func cleanGeneratedFiles(root string) {
+	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			name := d.Name()
+			if name == "vendor" || strings.HasPrefix(name, ".") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if filepath.Base(path) == generateFile {
+			_ = os.Remove(path)
+		}
+		return nil
+	})
+}
+
+// processPkg finds annotated structs in pkg and writes generated file
+func processPkg(pkg *packages.Package) error {
+	var entries []structEntry
+
+	for _, file := range pkg.Syntax {
+		ast.Inspect(file, func(n ast.Node) bool {
+			genDecl, ok := n.(*ast.GenDecl)
+			if !ok || genDecl.Tok != token.TYPE {
+				return true
+			}
+
+			for _, spec := range genDecl.Specs {
+				ts, ok := spec.(*ast.TypeSpec)
+				if !ok {
+					continue
+				}
+				if _, ok := ts.Type.(*ast.StructType); !ok {
+					continue
+				}
+
+				// Marker may be on the block comment or on the individual spec.
+				if !hasMarker(genDecl.Doc, markerText) && !hasMarker(ts.Doc, markerText) {
+					continue
+				}
+
+				obj := pkg.TypesInfo.Defs[ts.Name]
+				if obj == nil {
+					continue
+				}
+				named, ok := obj.Type().(*types.Named)
+				if !ok {
+					continue
+				}
+				st, ok := named.Underlying().(*types.Struct)
+				if !ok {
+					continue
+				}
+
+				body := buildResetBody("v", st, pkg.Types)
+				entries = append(entries, structEntry{Name: ts.Name.Name, Body: body})
+			}
+			return true
+		})
+	}
+
+	if len(entries) == 0 {
+		return nil
+	}
+
+	dir := ""
+	if len(pkg.GoFiles) > 0 {
+		dir = filepath.Dir(pkg.GoFiles[0])
+	} else {
+		return nil
+	}
+
+	var tmpl, err = template.ParseFiles("./cmd/reset/templates/reset.txt")
+	if err != nil {
+		return err
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, templateEnum{Package: pkg.Name, Entries: entries})
+	if err != nil {
+		return err
+	}
+	formatted, err := format.Source(buf.Bytes())
+	if err != nil {
+		return err
+	}
+
+	outPath := filepath.Join(dir, generateFile)
+	if err := os.WriteFile(outPath, formatted, 0644); err != nil {
+		return fmt.Errorf("write %s: %w", outPath, err)
+	}
+
+	logger.Log.Info("file was generated", zap.String("path", outPath))
+	return nil
+}
+
+// hasMarker reports whether doc contains a line equal to marker.
+func hasMarker(doc *ast.CommentGroup, marker string) bool {
+	if doc == nil {
+		return false
+	}
+	for _, c := range doc.List {
+		text := c.Text
+		switch {
+		case strings.HasPrefix(text, "//"):
+			text = strings.TrimSpace(text[2:])
+		case strings.HasPrefix(text, "/*"):
+			text = strings.TrimSpace(text[2 : len(text)-2])
+		}
+		if text == marker {
+			return true
+		}
+	}
+	return false
+}
+
+// buildResetBody generates the body (statements) of a Reset() method for struct s.
+func buildResetBody(recv string, s *types.Struct, pkg *types.Package) string {
+	var sb strings.Builder
+	for i := 0; i < s.NumFields(); i++ {
+		f := s.Field(i)
+		writeReset(&sb, recv+"."+f.Name(), f.Type(), pkg, 1)
+	}
+	return sb.String()
+}
+
+// writeReset writes the reset statement(s) for a value of type t accessed via access.
+func writeReset(sb *strings.Builder, access string, t types.Type, pkg *types.Package, depth int) {
+	tab := strings.Repeat("\t", depth)
+	switch tt := t.(type) {
+	case *types.Basic:
+		fmt.Fprintf(sb, "%s%s = %s\n", tab, access, basicZero(tt))
+	case *types.Slice:
+		fmt.Fprintf(sb, "%s%s = %s[:0]\n", tab, access, access)
+	case *types.Map:
+		fmt.Fprintf(sb, "%sclear(%s)\n", tab, access)
+	case *types.Named:
+		writeNamedReset(sb, access, tt, pkg, depth)
+	case *types.Pointer:
+		writePtrReset(sb, access, tt, pkg, depth)
+	case *types.Interface:
+		fmt.Fprintf(sb, "%s%s = nil\n", tab, access)
+	case *types.Signature:
+		fmt.Fprintf(sb, "%s%s = nil\n", tab, access)
+	case *types.Chan:
+		fmt.Fprintf(sb, "%s%s = nil\n", tab, access)
+	case *types.Struct:
+		// Inline anonymous struct — recurse into its fields.
+		for i := 0; i < tt.NumFields(); i++ {
+			f := tt.Field(i)
+			writeReset(sb, access+"."+f.Name(), f.Type(), pkg, depth)
+		}
+	}
+}
+
+// writeNamedReset handles a named type (e.g. a defined type or a type alias).
+func writeNamedReset(sb *strings.Builder, access string, t *types.Named, pkg *types.Package, depth int) {
+	tab := strings.Repeat("\t", depth)
+	switch u := t.Underlying().(type) {
+	case *types.Basic:
+		fmt.Fprintf(sb, "%s%s = %s\n", tab, access, basicZero(u))
+	case *types.Slice:
+		fmt.Fprintf(sb, "%s%s = %s[:0]\n", tab, access, access)
+	case *types.Map:
+		fmt.Fprintf(sb, "%sclear(%s)\n", tab, access)
+	case *types.Interface:
+		fmt.Fprintf(sb, "%s%s = nil\n", tab, access)
+	case *types.Struct:
+		if hasResetMethod(t) {
+			fmt.Fprintf(sb, "%s%s.Reset()\n", tab, access)
+		} else {
+			fmt.Fprintf(sb, "%s%s = %s{}\n", tab, access, qualifiedTypeName(t, pkg))
+		}
+	default:
+		// Other named types: use zero value literal.
+		fmt.Fprintf(sb, "%s%s = %s{}\n", tab, access, qualifiedTypeName(t, pkg))
+	}
+}
+
+// writePtrReset handles a pointer field: if not nil, resets the pointed-to value.
+func writePtrReset(sb *strings.Builder, access string, t *types.Pointer, pkg *types.Package, depth int) {
+	tab := strings.Repeat("\t", depth)
+	inner := tab + "\t"
+	fmt.Fprintf(sb, "%sif %s != nil {\n", tab, access)
+
+	switch e := t.Elem().(type) {
+	case *types.Basic:
+		fmt.Fprintf(sb, "%s*%s = %s\n", inner, access, basicZero(e))
+	case *types.Slice:
+		fmt.Fprintf(sb, "%s*%s = (*%s)[:0]\n", inner, access, access)
+	case *types.Map:
+		fmt.Fprintf(sb, "%sclear(*%s)\n", inner, access)
+	case *types.Named:
+		switch eu := e.Underlying().(type) {
+		case *types.Struct:
+			if hasResetMethod(e) {
+				// Pointer receiver: can call Reset() directly on the pointer.
+				fmt.Fprintf(sb, "%s%s.Reset()\n", inner, access)
+			} else {
+				fmt.Fprintf(sb, "%s*%s = %s{}\n", inner, access, qualifiedTypeName(e, pkg))
+			}
+		case *types.Basic:
+			fmt.Fprintf(sb, "%s*%s = %s\n", inner, access, basicZero(eu))
+		default:
+			fmt.Fprintf(sb, "%s*%s = %s{}\n", inner, access, qualifiedTypeName(e, pkg))
+		}
+	case *types.Interface:
+		fmt.Fprintf(sb, "%s*%s = nil\n", inner, access)
+	case *types.Pointer:
+		// Pointer-to-pointer: recurse one level deeper.
+		writePtrReset(sb, "*"+access, e, pkg, depth+1)
+	}
+
+	fmt.Fprintf(sb, "%s}\n", tab)
+}
+
+// hasResetMethod reports whether t (or *t) has a Reset() method with no parameters/results.
+func hasResetMethod(t *types.Named) bool {
+	for i := 0; i < t.NumMethods(); i++ {
+		m := t.Method(i)
+		if m.Name() != "Reset" {
+			continue
+		}
+		sig, ok := m.Type().(*types.Signature)
+		if ok && sig.Params().Len() == 0 && sig.Results().Len() == 0 {
+			return true
+		}
+	}
+	// Also check pointer receiver methods.
+	ms := types.NewMethodSet(types.NewPointer(t))
+	for i := 0; i < ms.Len(); i++ {
+		sel := ms.At(i)
+		if sel.Obj().Name() != "Reset" {
+			continue
+		}
+		sig, ok := sel.Type().(*types.Signature)
+		if ok && sig.Params().Len() == 0 && sig.Results().Len() == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// qualifiedTypeName returns the type name as it should appear in generated code
+// within currentPkg: unqualified for local types, pkg.TypeName for external ones.
+func qualifiedTypeName(t *types.Named, currentPkg *types.Package) string {
+	obj := t.Obj()
+	if obj.Pkg() == nil || obj.Pkg() == currentPkg {
+		return obj.Name()
+	}
+	return obj.Pkg().Name() + "." + obj.Name()
+}
+
+// basicZero returns the zero-value literal for a basic type.
+func basicZero(t *types.Basic) string {
+	switch t.Kind() {
+	case types.Bool:
+		return "false"
+	case types.String:
+		return `""`
+	case types.UnsafePointer:
+		return "nil"
+	default:
+		return "0"
+	}
+}
