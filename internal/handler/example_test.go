@@ -163,7 +163,7 @@ func ExampleValueHandler() {
 func ExampleUpdatesHandler() {
 	storage := repository.NewMemStorage()
 
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	// Создаем несколько метрик для batch обновления
 	delta1 := int64(100)
