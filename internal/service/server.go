@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"crypto/rsa"
 	"net"
 	"net/http"
 	"time"
 
+	"github.com/Bessima/metrics-collect/internal/crypto_message"
 	"github.com/Bessima/metrics-collect/internal/handler"
 	"github.com/Bessima/metrics-collect/internal/middlewares/compress"
 	hashMiddleware "github.com/Bessima/metrics-collect/internal/middlewares/hash"
@@ -13,22 +15,34 @@ import (
 	"github.com/Bessima/metrics-collect/internal/repository"
 	"github.com/Bessima/metrics-collect/pkg/audit"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 type ServerService struct {
-	Server  *http.Server
-	storage repository.StorageRepositorier
-	hashKey string
+	Server     *http.Server
+	storage    repository.StorageRepositorier
+	hashKey    string
+	privateKey *rsa.PrivateKey
 }
 
-func NewServerService(rootContext context.Context, address string, hashKey string, storage repository.StorageRepositorier) ServerService {
+func NewServerService(rootContext context.Context, address string, hashKey string, storage repository.StorageRepositorier, cryptoKeyPath string) ServerService {
 	server := &http.Server{
 		Addr: address,
 		BaseContext: func(_ net.Listener) context.Context {
 			return rootContext
 		},
 	}
-	return ServerService{Server: server, storage: storage, hashKey: hashKey}
+
+	var privKey *rsa.PrivateKey
+	if cryptoKeyPath != "" {
+		var err error
+		privKey, err = crypto_message.GetPrivateKey(cryptoKeyPath)
+		if err != nil {
+			logger.Log.Error("failed to load private key", zap.Error(err))
+		}
+	}
+
+	return ServerService{Server: server, storage: storage, hashKey: hashKey, privateKey: privKey}
 }
 
 func (serverService *ServerService) SetRouter(storeInterval int64, metricsFromFile *repository.MetricsFromFile, auditEvent *audit.Event) {
@@ -59,7 +73,7 @@ func (serverService *ServerService) getRouter(metricsFromFile *repository.Metric
 	router.Post("/update/", handler.UpdateHandler(serverService.storage, metricsFromFile))
 	router.Post("/value/", handler.ValueHandler(serverService.storage))
 
-	router.Post("/updates/", handler.UpdatesHandler(serverService.storage, metricsFromFile, auditEvent))
+	router.Post("/updates/", handler.UpdatesHandler(serverService.storage, metricsFromFile, auditEvent, serverService.privateKey))
 
 	router.Get("/ping", handler.PingHandler(serverService.storage))
 

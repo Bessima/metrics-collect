@@ -2,7 +2,11 @@ package handler
 
 import (
 	"bytes"
+	"compress/gzip"
+	"crypto/rsa"
 	"encoding/json"
+	"github.com/Bessima/metrics-collect/internal/crypto_message"
+	"io"
 	"net/http"
 
 	models "github.com/Bessima/metrics-collect/internal/model"
@@ -11,7 +15,7 @@ import (
 )
 
 // UpdatesHandler обновляет или сохраняет метрики, переданные через json-параметры
-func UpdatesHandler(storage repository.StorageRepositorier, metricsFromFile *repository.MetricsFromFile, auditEvent *audit.Event) http.HandlerFunc {
+func UpdatesHandler(storage repository.StorageRepositorier, metricsFromFile *repository.MetricsFromFile, auditEvent *audit.Event, privateKey *rsa.PrivateKey) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var metrics []models.Metrics
 		var buf bytes.Buffer
@@ -22,8 +26,31 @@ func UpdatesHandler(storage repository.StorageRepositorier, metricsFromFile *rep
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		var data []byte
 
-		if err = json.Unmarshal(buf.Bytes(), &metrics); err != nil {
+		if privateKey != nil {
+			data, err = crypto_message.DecryptMessage(buf.Bytes(), privateKey)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			gr, err := gzip.NewReader(bytes.NewReader(data))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			data, err = io.ReadAll(gr)
+			gr.Close()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+		if data == nil {
+			data = buf.Bytes()
+		}
+
+		if err = json.Unmarshal(data, &metrics); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

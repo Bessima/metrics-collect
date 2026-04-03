@@ -26,6 +26,8 @@ type Config struct {
 	AuditFile string `env:"AUDIT_FILE"`
 	//AuditURL аддрес сервера для сохранения аудит данных в файл
 	AuditURL string `env:"AUDIT_URL"`
+
+	CryptoKey string `env:"CRYPTO_KEY"`
 }
 
 func InitConfig() *Config {
@@ -41,6 +43,7 @@ func InitConfig() *Config {
 		KeyHash:         flags.keyHash,
 		AuditFile:       flags.auditFile,
 		AuditURL:        flags.auditURL,
+		CryptoKey:       flags.cryptoKey,
 	}
 	cfg.parseEnv()
 

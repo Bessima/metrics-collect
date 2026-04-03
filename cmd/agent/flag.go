@@ -14,6 +14,7 @@ type AgentFlags struct {
 	reportInterval int64
 	key            string
 	rateLimit      int
+	cryptoKey      string
 }
 
 func (f *AgentFlags) Init() {
@@ -22,6 +23,7 @@ func (f *AgentFlags) Init() {
 	flag.Int64Var(&f.reportInterval, "r", defaultReportInterval, "report interval")
 	flag.StringVar(&f.key, "k", "", "key for hash")
 	flag.IntVar(&f.rateLimit, "l", defaultRateLimit, "rate limit for pool")
+	flag.StringVar(&f.cryptoKey, "crypto_message-key", "", "crypto_message key")
 
 	flag.Parse()
 }
