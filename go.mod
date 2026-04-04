@@ -1,6 +1,6 @@
 module github.com/Bessima/metrics-collect
 
-go 1.24.13
+go 1.24.4
 
 require (
 	github.com/caarlos0/env v3.5.0+incompatible
