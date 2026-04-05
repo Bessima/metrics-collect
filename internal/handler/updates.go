@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"crypto/rsa"
 	"encoding/json"
-	"github.com/Bessima/metrics-collect/internal/crypto_message"
+	"github.com/Bessima/metrics-collect/internal/cryptomessage"
 	"io"
 	"net/http"
 
@@ -29,7 +29,7 @@ func UpdatesHandler(storage repository.StorageRepositorier, metricsFromFile *rep
 		var data []byte
 
 		if privateKey != nil {
-			data, err = crypto_message.DecryptMessage(buf.Bytes(), privateKey)
+			data, err = cryptomessage.DecryptMessage(buf.Bytes(), privateKey)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return

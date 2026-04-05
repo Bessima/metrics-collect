@@ -1,4 +1,4 @@
-package crypto_message
+package cryptomessage
 
 import (
 	"crypto/rand"

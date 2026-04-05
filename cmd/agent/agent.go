@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/rsa"
 	"fmt"
-	"github.com/Bessima/metrics-collect/internal/crypto_message"
+	"github.com/Bessima/metrics-collect/internal/cryptomessage"
 	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"log"
 	"net/http"
@@ -31,7 +31,7 @@ func NewAgent() *Agent {
 	var pubKey *rsa.PublicKey
 	if config.CryptoKey != "" {
 		var err error
-		pubKey, err = crypto_message.GetPublicKey(config.CryptoKey)
+		pubKey, err = cryptomessage.GetPublicKey(config.CryptoKey)
 		if err != nil {
 			logger.Log.Error(err.Error())
 		}
@@ -124,7 +124,7 @@ func (a *Agent) sendCompressMetrics(metrics []models.Metrics) error {
 	isCompressed := true
 	if a.publicKey != nil {
 		dataBytes := bufferData.Bytes()
-		dataEncrypt, err := crypto_message.EncryptMessage(dataBytes, a.publicKey)
+		dataEncrypt, err := cryptomessage.EncryptMessage(dataBytes, a.publicKey)
 		if err != nil {
 			return fmt.Errorf("failed to encrypt bufferData: %v", err)
 		}

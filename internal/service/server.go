@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Bessima/metrics-collect/internal/crypto_message"
+	"github.com/Bessima/metrics-collect/internal/cryptomessage"
 	"github.com/Bessima/metrics-collect/internal/handler"
 	"github.com/Bessima/metrics-collect/internal/middlewares/compress"
 	hashMiddleware "github.com/Bessima/metrics-collect/internal/middlewares/hash"
@@ -36,7 +36,7 @@ func NewServerService(rootContext context.Context, address string, hashKey strin
 	var privKey *rsa.PrivateKey
 	if cryptoKeyPath != "" {
 		var err error
-		privKey, err = crypto_message.GetPrivateKey(cryptoKeyPath)
+		privKey, err = cryptomessage.GetPrivateKey(cryptoKeyPath)
 		if err != nil {
 			logger.Log.Error("failed to load private key", zap.Error(err))
 		}
