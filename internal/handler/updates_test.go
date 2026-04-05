@@ -18,7 +18,7 @@ import (
 
 func TestUpdatesHandler_Success(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	counter1 := int64(10)
 	counter2 := int64(20)
@@ -79,7 +79,7 @@ func TestUpdatesHandler_Success(t *testing.T) {
 
 func TestUpdatesHandler_EmptyArray(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	metrics := []models.Metrics{}
 
@@ -97,7 +97,7 @@ func TestUpdatesHandler_EmptyArray(t *testing.T) {
 
 func TestUpdatesHandler_InvalidJSON(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/updates/", bytes.NewBufferString("invalid json"))
 	req.Header.Set("Content-Type", "application/json")
@@ -111,7 +111,7 @@ func TestUpdatesHandler_InvalidJSON(t *testing.T) {
 
 func TestUpdatesHandler_CounterWithoutDelta(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	metrics := []models.Metrics{
 		{
@@ -136,7 +136,7 @@ func TestUpdatesHandler_CounterWithoutDelta(t *testing.T) {
 
 func TestUpdatesHandler_GaugeWithoutValue(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	metrics := []models.Metrics{
 		{
@@ -161,7 +161,7 @@ func TestUpdatesHandler_GaugeWithoutValue(t *testing.T) {
 
 func TestUpdatesHandler_UnsupportedType(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	value := int64(10)
 	metrics := []models.Metrics{
@@ -191,7 +191,7 @@ func TestUpdatesHandler_WithMetricsFromFile(t *testing.T) {
 
 	storage := repository.NewMemStorage()
 	metricsFromFile := repository.NewMetricsFromFile(filename)
-	handler := UpdatesHandler(storage, metricsFromFile, nil)
+	handler := UpdatesHandler(storage, metricsFromFile, nil, nil)
 
 	counter := int64(100)
 	metrics := []models.Metrics{
@@ -237,7 +237,7 @@ func TestUpdatesHandler_WithAuditEvent(t *testing.T) {
 	fileSubscriber := audit.NewFileSubscriber(auditFile)
 	auditEvent.Register(fileSubscriber)
 
-	handler := UpdatesHandler(storage, nil, auditEvent)
+	handler := UpdatesHandler(storage, nil, auditEvent, nil)
 
 	counter := int64(50)
 	gauge := 1.23
@@ -274,7 +274,7 @@ func TestUpdatesHandler_WithAuditEvent(t *testing.T) {
 
 func TestUpdatesHandler_MixedValidAndInvalidMetrics(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	validCounter := int64(10)
 	metrics := []models.Metrics{
@@ -310,7 +310,7 @@ func TestUpdatesHandler_MixedValidAndInvalidMetrics(t *testing.T) {
 
 func TestUpdatesHandler_MultipleCounterIncrements(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	// First update
 	counter1 := int64(10)
@@ -354,7 +354,7 @@ func TestUpdatesHandler_MultipleCounterIncrements(t *testing.T) {
 
 func TestUpdatesHandler_GaugeReplacement(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	// First update
 	gauge1 := 1.5
@@ -398,7 +398,7 @@ func TestUpdatesHandler_GaugeReplacement(t *testing.T) {
 
 func TestUpdatesHandler_LargePayload(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	// Create 100 metrics
 	metrics := make([]models.Metrics, 100)
@@ -425,7 +425,7 @@ func TestUpdatesHandler_LargePayload(t *testing.T) {
 
 func TestUpdatesHandler_EmptyBody(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/updates/", bytes.NewBuffer([]byte{}))
 	req.Header.Set("Content-Type", "application/json")
@@ -438,7 +438,7 @@ func TestUpdatesHandler_EmptyBody(t *testing.T) {
 
 func TestUpdatesHandler_NilBody(t *testing.T) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/updates/", nil)
 	req.Header.Set("Content-Type", "application/json")

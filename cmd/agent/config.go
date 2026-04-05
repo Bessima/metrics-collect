@@ -13,6 +13,7 @@ type Config struct {
 	PoolInterval   int64  `env:"POLL_INTERVAL"`
 	Key            string `env:"KEY"`
 	RateLimit      int    `env:"RATE_LIMIT"`
+	CryptoKey      string `env:"CRYPTO_KEY"`
 }
 
 func InitConfig() *Config {
@@ -25,6 +26,7 @@ func InitConfig() *Config {
 		PoolInterval:   flags.poolInterval,
 		Key:            flags.key,
 		RateLimit:      flags.rateLimit,
+		CryptoKey:      flags.cryptoKey,
 	}
 
 	cfg.parseEnv()

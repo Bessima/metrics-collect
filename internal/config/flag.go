@@ -18,6 +18,7 @@ type ServerFlags struct {
 	keyHash         string
 	auditFile       string
 	auditURL        string
+	cryptoKey       string
 }
 
 func (flags *ServerFlags) Init() {
@@ -32,6 +33,8 @@ func (flags *ServerFlags) Init() {
 
 	flag.StringVar(&flags.auditFile, "audit-file", "", "path to audit file")
 	flag.StringVar(&flags.auditURL, "audit-url", "", "address for applying audit data")
+
+	flag.StringVar(&flags.cryptoKey, "crypto_message-key", "", "crypto_message key")
 
 	flag.Parse()
 }

@@ -66,7 +66,7 @@ func run() error {
 
 	}
 
-	serverService := service.NewServerService(rootCtx, conf.Address, conf.KeyHash, app.storageRepository)
+	serverService := service.NewServerService(rootCtx, conf.Address, conf.KeyHash, app.storageRepository, conf.CryptoKey)
 	serverService.SetRouter(conf.StoreInterval, app.metricsFromFile, &event)
 
 	saveCtx, saveCancel := context.WithCancel(rootCtx)

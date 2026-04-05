@@ -1,7 +1,10 @@
 package main
 
 import (
+	"crypto/rsa"
 	"fmt"
+	"github.com/Bessima/metrics-collect/internal/cryptomessage"
+	"github.com/Bessima/metrics-collect/internal/middlewares/logger"
 	"log"
 	"net/http"
 	"time"
@@ -12,8 +15,9 @@ import (
 )
 
 type Agent struct {
-	config *Config
-	client agent.Client
+	config    *Config
+	client    agent.Client
+	publicKey *rsa.PublicKey
 }
 
 func NewAgent() *Agent {
@@ -23,9 +27,20 @@ func NewAgent() *Agent {
 		Domain:     config.getServerAddressWithProtocol(),
 		HTTPClient: &http.Client{},
 	}
+
+	var pubKey *rsa.PublicKey
+	if config.CryptoKey != "" {
+		var err error
+		pubKey, err = cryptomessage.GetPublicKey(config.CryptoKey)
+		if err != nil {
+			logger.Log.Error(err.Error())
+		}
+	}
+
 	return &Agent{
-		config: config,
-		client: client,
+		config:    config,
+		client:    client,
+		publicKey: pubKey,
 	}
 }
 
@@ -101,16 +116,29 @@ func (a *Agent) Run() {
 }
 
 func (a *Agent) sendCompressMetrics(metrics []models.Metrics) error {
-	data, err := agent.CompressJSONMetrics(metrics)
+	bufferData, err := agent.CompressJSONMetrics(metrics)
 	if err != nil {
-		return fmt.Errorf("failed to compress data: %v", err)
-	}
-	hash := ""
-	if a.config.Key != "" {
-		hash = common.GetHashData(data.Bytes(), a.config.Key)
+		return fmt.Errorf("failed to compress bufferData: %v", err)
 	}
 
-	err = a.client.SendData(data, hash)
+	isCompressed := true
+	if a.publicKey != nil {
+		dataBytes := bufferData.Bytes()
+		dataEncrypt, err := cryptomessage.EncryptMessage(dataBytes, a.publicKey)
+		if err != nil {
+			return fmt.Errorf("failed to encrypt bufferData: %v", err)
+		}
+		bufferData.Reset()
+		bufferData.Write(dataEncrypt)
+		isCompressed = false
+	}
+
+	hash := ""
+	if a.config.Key != "" {
+		hash = common.GetHashData(bufferData.Bytes(), a.config.Key)
+	}
+
+	err = a.client.SendData(bufferData, hash, isCompressed)
 	if err != nil {
 		return fmt.Errorf("error sending metrics: %s", err)
 	}

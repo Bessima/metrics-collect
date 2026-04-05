@@ -19,7 +19,7 @@ func TestNewServerService(t *testing.T) {
 	hashKey := "secret"
 	storage := repository.NewMemStorage()
 
-	serverService := NewServerService(ctx, address, hashKey, storage)
+	serverService := NewServerService(ctx, address, hashKey, storage, "")
 
 	assert.NotNil(t, serverService)
 	assert.NotNil(t, serverService.Server)
@@ -34,7 +34,7 @@ func TestServerService_Integration(t *testing.T) {
 	hashKey := ""
 	storage := repository.NewMemStorage()
 
-	serverService := NewServerService(ctx, address, hashKey, storage)
+	serverService := NewServerService(ctx, address, hashKey, storage, "")
 	auditEvent := &audit.Event{}
 	serverService.SetRouter(300, nil, auditEvent)
 
@@ -66,7 +66,7 @@ func TestServerService_ContextPropagation(t *testing.T) {
 	hashKey := "secret"
 	storage := repository.NewMemStorage()
 
-	serverService := NewServerService(ctx, address, hashKey, storage)
+	serverService := NewServerService(ctx, address, hashKey, storage, "")
 
 	assert.NotNil(t, serverService)
 	assert.NotNil(t, serverService.Server)
@@ -79,7 +79,7 @@ func TestServerService_MultipleRequests(t *testing.T) {
 	hashKey := ""
 	storage := repository.NewMemStorage()
 
-	serverService := NewServerService(ctx, address, hashKey, storage)
+	serverService := NewServerService(ctx, address, hashKey, storage, "")
 	auditEvent := &audit.Event{}
 	serverService.SetRouter(300, nil, auditEvent)
 
@@ -100,7 +100,7 @@ func TestServerService_WithHashKey(t *testing.T) {
 	hashKey := "my-secret-key"
 	storage := repository.NewMemStorage()
 
-	serverService := NewServerService(ctx, address, hashKey, storage)
+	serverService := NewServerService(ctx, address, hashKey, storage, "")
 	auditEvent := &audit.Event{}
 	serverService.SetRouter(300, nil, auditEvent)
 
@@ -114,7 +114,7 @@ func TestServerService_WithoutHashKey(t *testing.T) {
 	hashKey := ""
 	storage := repository.NewMemStorage()
 
-	serverService := NewServerService(ctx, address, hashKey, storage)
+	serverService := NewServerService(ctx, address, hashKey, storage, "")
 	auditEvent := &audit.Event{}
 	serverService.SetRouter(300, nil, auditEvent)
 
