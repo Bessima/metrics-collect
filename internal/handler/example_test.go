@@ -261,7 +261,7 @@ func Example() {
 	log.Printf("Step 2 - Get metric via URL: %s", string(value))
 
 	// 4. Batch обновление через JSON
-	updateHandler := UpdatesHandler(storage, nil, nil)
+	updateHandler := UpdatesHandler(storage, nil, nil, nil)
 	delta := int64(5)
 	gaugeValue := 98.6
 	metrics := []models.Metrics{
