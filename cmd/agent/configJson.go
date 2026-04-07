@@ -6,15 +6,15 @@ import (
 	"os"
 )
 
-type ConfigAgentJson struct {
+type ConfigAgentJSON struct {
 	ServerAddress  string `json:"address"`
 	ReportInterval int64  `json:"report_interval"`
 	PoolInterval   int64  `json:"pool_interval"`
 	CryptoKey      string `json:"crypto_key"`
 }
 
-func NewConfigJson() *ConfigAgentJson {
-	return &ConfigAgentJson{
+func NewConfigJSON() *ConfigAgentJSON {
+	return &ConfigAgentJSON{
 		ServerAddress:  "http://localhost:8080",
 		ReportInterval: defaultReportInterval,
 		PoolInterval:   defaultPollInterval,
@@ -22,7 +22,7 @@ func NewConfigJson() *ConfigAgentJson {
 	}
 }
 
-func (cfg *ConfigAgentJson) Parse(filename string) error {
+func (cfg *ConfigAgentJSON) Parse(filename string) error {
 	log.Printf("Parsing JSON config file %s", filename)
 
 	settingsFile, err := os.ReadFile(filename)

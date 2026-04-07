@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-type ConfigServerJson struct {
+type ConfigServerJSON struct {
 	Address         string `json:"address"`
 	StoreInterval   int64  `json:"store_interval"`
 	FileStoragePath string `json:"store_file"`
@@ -15,8 +15,8 @@ type ConfigServerJson struct {
 	CryptoKey       string `json:"crypto_key"`
 }
 
-func NewConfigJson() *ConfigServerJson {
-	return &ConfigServerJson{
+func NewConfigJSON() *ConfigServerJSON {
+	return &ConfigServerJSON{
 		Address:         ":8080",
 		StoreInterval:   defaultStoreInterval,
 		FileStoragePath: metricsPath,
@@ -26,7 +26,7 @@ func NewConfigJson() *ConfigServerJson {
 	}
 }
 
-func (cfg *ConfigServerJson) Parse(filename string) error {
+func (cfg *ConfigServerJSON) Parse(filename string) error {
 	log.Printf("Parsing JSON config file %s", filename)
 
 	settingsFile, err := os.ReadFile(filename)
