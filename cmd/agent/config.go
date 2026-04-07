@@ -8,11 +8,13 @@ import (
 )
 
 type Config struct {
-	ServerAddress  string `env:"ADDRESS"`
-	ReportInterval int64  `env:"REPORT_INTERVAL"`
-	PoolInterval   int64  `env:"POLL_INTERVAL"`
+	ServerAddress  string `env:"ADDRESS" json:"address"`
+	ReportInterval int64  `env:"REPORT_INTERVAL" json:"report_interval"`
+	PoolInterval   int64  `env:"POLL_INTERVAL" json:"pool_interval"`
 	Key            string `env:"KEY"`
 	RateLimit      int    `env:"RATE_LIMIT"`
+	CryptoKey      string `env:"CRYPTO_KEY" json:"crypto_key"`
+	ConfigFile     string `env:"CONFIG"`
 }
 
 func InitConfig() *Config {
@@ -25,6 +27,8 @@ func InitConfig() *Config {
 		PoolInterval:   flags.poolInterval,
 		Key:            flags.key,
 		RateLimit:      flags.rateLimit,
+		CryptoKey:      flags.cryptoKey,
+		ConfigFile:     flags.config,
 	}
 
 	cfg.parseEnv()
