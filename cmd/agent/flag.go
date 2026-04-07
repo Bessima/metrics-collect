@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 )
 
 const defaultPollInterval = 2
@@ -15,15 +16,28 @@ type AgentFlags struct {
 	key            string
 	rateLimit      int
 	cryptoKey      string
+	config         string
 }
 
 func (f *AgentFlags) Init() {
-	flag.StringVar(&f.serverAddress, "a", "http://localhost:8080", "address and port server")
-	flag.Int64Var(&f.poolInterval, "p", defaultPollInterval, "poll interval")
-	flag.Int64Var(&f.reportInterval, "r", defaultReportInterval, "report interval")
+	flag.StringVar(&f.config, "c", "", "config json file path")
+
+	flag.Parse()
+
+	cfgJson := NewConfigJson()
+	configValue, exists := os.LookupEnv("CONFIG")
+	if exists {
+		cfgJson.Parse(configValue)
+	} else if f.config != "" {
+		cfgJson.Parse(f.config)
+	}
+
+	flag.StringVar(&f.serverAddress, "a", cfgJson.ServerAddress, "address and port server")
+	flag.Int64Var(&f.poolInterval, "p", cfgJson.PoolInterval, "poll interval")
+	flag.Int64Var(&f.reportInterval, "r", cfgJson.ReportInterval, "report interval")
 	flag.StringVar(&f.key, "k", "", "key for hash")
 	flag.IntVar(&f.rateLimit, "l", defaultRateLimit, "rate limit for pool")
-	flag.StringVar(&f.cryptoKey, "crypto_message-key", "", "crypto_message key")
+	flag.StringVar(&f.cryptoKey, "crypto_message-key", cfgJson.CryptoKey, "crypto_message key")
 
 	flag.Parse()
 }

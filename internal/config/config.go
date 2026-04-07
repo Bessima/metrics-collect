@@ -10,16 +10,16 @@ import (
 // Config хранит основные пареметры для запуска сервера
 type Config struct {
 	// Address адрес и порт для запуска сервера
-	Address string `env:"ADDRESS"`
+	Address string `env:"ADDRESS" json:"address"`
 
 	// StoreInterval интервал записи в хранилище
-	StoreInterval int64 `env:"STORE_INTERVAL"`
+	StoreInterval int64 `env:"STORE_INTERVAL" json:"store_interval"`
 	// FileStoragePath путь для сохранения данных
-	FileStoragePath string `env:"FILE_STORAGE_PATH"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH" json:"store_file"`
 	// Restore перезапись
-	Restore bool `env:"RESTORE"`
+	Restore bool `env:"RESTORE" json:"restore"`
 	// DatabaseDNS Адрес доступа к БД
-	DatabaseDNS string `env:"DATABASE_DSN"`
+	DatabaseDNS string `env:"DATABASE_DSN" json:"database_dns"`
 	// KeyHash Хэш-ключ
 	KeyHash string `env:"KEY"`
 	//AuditFile путь для сохранения аудит данных в файл
@@ -27,7 +27,8 @@ type Config struct {
 	//AuditURL аддрес сервера для сохранения аудит данных в файл
 	AuditURL string `env:"AUDIT_URL"`
 
-	CryptoKey string `env:"CRYPTO_KEY"`
+	CryptoKey  string `env:"CRYPTO_KEY" json:"crypto_key"`
+	ConfigFile string `env:"CONFIG"`
 }
 
 func InitConfig() *Config {
@@ -44,6 +45,7 @@ func InitConfig() *Config {
 		AuditFile:       flags.auditFile,
 		AuditURL:        flags.auditURL,
 		CryptoKey:       flags.cryptoKey,
+		ConfigFile:      flags.configFile,
 	}
 	cfg.parseEnv()
 
