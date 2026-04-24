@@ -73,7 +73,8 @@ func (serverService *ServerService) getRouter(metricsFromFile *repository.Metric
 	router.Post("/update/", handler.UpdateHandler(serverService.storage, metricsFromFile))
 	router.Post("/value/", handler.ValueHandler(serverService.storage))
 
-	router.Post("/updates/", handler.UpdatesHandler(serverService.storage, metricsFromFile, auditEvent, serverService.privateKey))
+	handlerUpdates := handler.NewUpdatesHandler(serverService.storage, metricsFromFile, auditEvent, serverService.privateKey)
+	router.Post("/updates/", handlerUpdates.Handler())
 
 	router.Get("/ping", handler.PingHandler(serverService.storage))
 
