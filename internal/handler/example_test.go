@@ -163,7 +163,7 @@ func ExampleValueHandler() {
 func ExampleUpdatesHandler() {
 	storage := repository.NewMemStorage()
 
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	// Создаем несколько метрик для batch обновления
 	delta1 := int64(100)
@@ -261,7 +261,7 @@ func Example() {
 	log.Printf("Step 2 - Get metric via URL: %s", string(value))
 
 	// 4. Batch обновление через JSON
-	updateHandler := UpdatesHandler(storage, nil, nil)
+	updateHandler := UpdatesHandler(storage, nil, nil, nil)
 	delta := int64(5)
 	gaugeValue := 98.6
 	metrics := []models.Metrics{

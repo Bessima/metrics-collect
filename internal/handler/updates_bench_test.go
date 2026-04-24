@@ -38,7 +38,7 @@ func BenchmarkUpdatesHandler_Sequential(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			storage := repository.NewMemStorage()
-			handler := UpdatesHandler(storage, nil, nil)
+			handler := UpdatesHandler(storage, nil, nil, nil)
 
 			// Подготавливаем payload
 			metrics := make([]models.Metrics, bm.numMetrics)
@@ -175,7 +175,7 @@ func BenchmarkUpdatesHandler_MetricUpdate(b *testing.B) {
 // многократных обновлений одних и тех же метрик
 func BenchmarkUpdatesHandler_RepeatedUpdates(b *testing.B) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	// Создаем 10 метрик
 	metrics := make([]models.Metrics, 10)
@@ -212,7 +212,7 @@ func BenchmarkUpdatesHandler_RepeatedUpdates(b *testing.B) {
 // BenchmarkUpdatesHandler_MixedMetrics измеряет производительность со смешанными типами
 func BenchmarkUpdatesHandler_MixedMetrics(b *testing.B) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	// 50% counters, 50% gauges
 	metrics := make([]models.Metrics, 100)
@@ -258,7 +258,7 @@ func BenchmarkUpdatesHandler_MixedMetrics(b *testing.B) {
 // BenchmarkUpdatesHandler_Parallel измеряет конкурентную обработку batch-запросов
 func BenchmarkUpdatesHandler_Parallel(b *testing.B) {
 	storage := repository.NewMemStorage()
-	handler := UpdatesHandler(storage, nil, nil)
+	handler := UpdatesHandler(storage, nil, nil, nil)
 
 	// Подготавливаем payload
 	metrics := make([]models.Metrics, 100)
@@ -329,7 +329,7 @@ func BenchmarkUpdatesHandler_MemoryUsage(b *testing.B) {
 
 			for i := 0; i < b.N; i++ {
 				storage := repository.NewMemStorage()
-				handler := UpdatesHandler(storage, nil, nil)
+				handler := UpdatesHandler(storage, nil, nil, nil)
 
 				req := httptest.NewRequest(http.MethodPost, "/updates/", bytes.NewBuffer(body))
 				req.Header.Set("Content-Type", "application/json")

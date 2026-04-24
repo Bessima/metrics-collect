@@ -48,16 +48,19 @@ func (client *Client) SendMetric(typeMetric string, name string, value string) e
 	return nil
 }
 
-func (client *Client) SendData(data *bytes.Buffer, hash string) error {
+func (client *Client) SendData(data *bytes.Buffer, hash string, isCompressed bool) error {
 	postURL := fmt.Sprintf("%s/updates/", client.Domain)
+	bodyBytes := data.Bytes()
 
 	return retry.DoRetry(context.Background(), func() error {
-		req, err := http.NewRequest(http.MethodPost, postURL, data)
+		req, err := http.NewRequest(http.MethodPost, postURL, bytes.NewReader(bodyBytes))
 		if err != nil {
 			logger.Log.Error("Error creating request", zap.Error(err))
 		}
 		req.Header.Add("Content-Type", "application/json")
-		req.Header.Add("Content-Encoding", "gzip")
+		if isCompressed {
+			req.Header.Add("Content-Encoding", "gzip")
+		}
 
 		if hash != "" {
 			req.Header.Add(common.HashHeader, hash)

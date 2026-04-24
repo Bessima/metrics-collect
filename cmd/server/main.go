@@ -37,7 +37,7 @@ func main() {
 }
 
 func run() error {
-	rootCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	rootCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
 	conf := config.InitConfig()
@@ -66,7 +66,7 @@ func run() error {
 
 	}
 
-	serverService := service.NewServerService(rootCtx, conf.Address, conf.KeyHash, app.storageRepository)
+	serverService := service.NewServerService(rootCtx, conf.Address, conf.KeyHash, app.storageRepository, conf.CryptoKey)
 	serverService.SetRouter(conf.StoreInterval, app.metricsFromFile, &event)
 
 	saveCtx, saveCancel := context.WithCancel(rootCtx)
